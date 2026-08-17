@@ -1,6 +1,6 @@
 # ================ Droid ================
 DROID_AGGRO_DISTANCE = 10                        # Дистанция активации преследования | Distance to trigger chase
-DROID_ATTACK_DISTANCE = 5                        # Дистанция начала атаки | Distance to start attacking
+DROID_ATTACK_DISTANCE = 2                        # Дистанция начала атаки | Distance to start attacking
 DROID_RUN_SPEED = 9                              # Скорость бега дроида | Droid run speed
 DROID_SEPARATION_DISTANCE = 1.5                  # Дистанция разделения дроидов | Droid separation distance
 DROID_AVOID_LOOKAHEAD = 3.0                      # Дистанция обнаружения препятствий | Obstacle lookahead distance
