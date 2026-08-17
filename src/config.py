@@ -42,6 +42,6 @@ WINDOW_HEIGHT = 720                              # Высота окна | Windo
 SHOW_BOUNDS = False                               # Отображение отладочных границ | Show debug bounds
 SKY_COLOR = (0.55, 0.75, 1.0)                    # Цвет неба | Sky color
 GROUND_COLOR = (0.2, 0.7, 0.2)                   # Цвет земли | Ground color
-AMBIENT_COLOR = (0.5, 0.5, 0.5, 1)               # Цвет фонового освещения | Ambient light color
+AMBIENT_COLOR = (0.2, 0.2, 0.2, 1)               # Цвет фонового освещения | Ambient light color
 SUN_COLOR = (1, 1, 1, 1)                         # Цвет направленного света | Directional light color
 SUN_HPR = (-45, -45, 0)                          # Поворот солнца | Sun rotation
