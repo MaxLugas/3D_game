@@ -1,0 +1,77 @@
+import json
+import os
+
+from panda3d.core import Point3, CollisionNode, CollisionBox, BitMask32
+
+from src.config import SHOW_BOUNDS, OBSTACLE_MASK_BIT
+from src.core.npc_config import DROID_MODELS
+from src.core.objects_config import PICKUP_MODELS
+from src.entities.droid import Droid
+from src.entities.pickup import PickupItem
+from src.maps.editor_config import MAP_FILE, MODELS_DIR
+from src.maps.model_loader import load_model_or_actor
+
+
+class MapLoader:
+    def __init__(self, render, loader, pusher=None, collision_trav=None):
+        self.render = render
+        self.loader = loader
+        self.pusher = pusher
+        self.collision_trav = collision_trav
+        self.objects = []
+        self.droids = []
+        self.pickups = []
+
+    def load_map(self, path=MAP_FILE):
+        """
+        Загрузка карты из JSON файла
+        Load map from JSON file
+        """
+        if not os.path.exists(path):
+            return
+
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+
+        for name, items in data.get("objects", {}).items():
+            for item in items:
+                pos = Point3(*item.get("pos", [0, 0, 0]))
+                heading = item.get("heading", 0)
+                pitch = item.get("pitch", 0)
+                scale = item.get("scale")
+
+                if name in DROID_MODELS:
+                    droid = Droid(self.render, pos, self.pusher, self.collision_trav, heading=heading, scale=scale)
+                    self.droids.append(droid)
+                elif name in PICKUP_MODELS:
+                    pickup = PickupItem(self.render, self.loader, pos, heading=heading, scale=scale)
+                    self.pickups.append(pickup)
+                else:
+                    node = self.load_model(name)
+                    node.reparentTo(self.render)
+                    node.setPos(*pos)
+                    node.setH(heading)
+                    if pitch:
+                        node.setP(pitch)
+                    node.setScale(scale if scale else 1)
+                    if SHOW_BOUNDS:
+                        node.showBounds()
+                    self.setup_collidable_object(node)
+                    self.objects.append(node)
+
+    def setup_collidable_object(self, node):
+        """Создаёт коллайдер для статичного объекта. | Create collider for static object."""
+        lmin, lmax = node.getTightBounds(node)
+        center = (lmin + lmax) * 0.5
+        half = (lmax - lmin) * 0.5
+
+        collision = CollisionNode(f"static_{id(node)}")
+        collision.addSolid(CollisionBox(Point3(center.x, center.y, center.z), half.x, half.y, half.z))
+        collision.setIntoCollideMask(BitMask32.bit(1) | BitMask32.bit(OBSTACLE_MASK_BIT))
+        collision.setFromCollideMask(BitMask32.allOff())
+
+        node.attachNewNode(collision)
+
+    def load_model(self, name):
+        """Загружает статичную модель. | Load static model."""
+        return load_model_or_actor(self.loader, os.path.join(MODELS_DIR, name))
