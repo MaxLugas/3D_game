@@ -9,6 +9,7 @@ from src.config import SKY_COLOR, SPELL_RANGE, PICKUP_RANGE, PICKUP_RAY_RANGE, G
 from src.entities.player import Player
 from src.systems.camera import CameraController
 from src.systems.world_setup import WorldSetupMixin
+from src.systems.minimap import Minimap
 from src.maps.map_loader import MapLoader
 
 
@@ -36,6 +37,16 @@ class Game(WorldSetupMixin, ShowBase):
 
         self.droids = self.map_loader.droids
         self.pickups = self.map_loader.pickups
+
+        self.minimap = Minimap(
+            self.render,
+            self.aspect2d,
+            self.loader,
+            self.player.root,
+            self.map_loader.objects,
+            self.droids,
+            self.pickups,
+        )
 
         for k in self.player.keys:
             self.accept(k, self.player.set_key, [k, True])
@@ -184,6 +195,11 @@ class Game(WorldSetupMixin, ShowBase):
     def update(self, task):
         """Обновление игры каждый кадр | Update game every frame"""
         dt = globalClock.getDt()
+
+        tab_held = self.mouseWatcherNode.isButtonDown(KeyboardButton.tab())
+        self.minimap.set_visible(tab_held)
+        if tab_held:
+            self.minimap.update()
 
         self.player.shift_down = (
             self.mouseWatcherNode.isButtonDown(KeyboardButton.lshift())

@@ -38,6 +38,14 @@ GROUND_THICKNESS = 0.5                           # Толщина земли | G
 WINDOW_WIDTH = 1280                              # Ширина окна | Window width
 WINDOW_HEIGHT = 720                              # Высота окна | Window height
 
+# ================ Миникарта | Minimap ================
+MINIMAP_SIZE = 0.8                                # Размер миникарты | Minimap size
+MINIMAP_MARGIN = 0.01                             # Отступ от края экрана | Margin from screen edge
+MINIMAP_BG_ALPHA = 0.7                            # Прозрачность фона | Background transparency
+MINIMAP_PLAYER_MARKER_SCALE = 0.05                # Масштаб маркера игрока | Player marker scale
+MINIMAP_NPC_MARKER_SCALE = MINIMAP_SIZE / 20      # Масштаб маркера NPC | NPC marker scale
+MINIMAP_OBJECT_MARKER_SCALE = MINIMAP_SIZE / 20   # Масштаб маркера объекта | Object marker scale
+
 # ================ Освещение и окружение | Lighting and Environment ================
 SHOW_BOUNDS = False                               # Отображение отладочных границ | Show debug bounds
 SKY_COLOR = (0.55, 0.75, 1.0)                    # Цвет неба | Sky color

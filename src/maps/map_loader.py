@@ -57,7 +57,7 @@ class MapLoader:
                     if SHOW_BOUNDS:
                         node.showBounds()
                     self.setup_collidable_object(node)
-                    self.objects.append(node)
+                    self.objects.append((name, node))
 
     def setup_collidable_object(self, node):
         """Создаёт коллайдер для статичного объекта. | Create collider for static object."""
