@@ -6,12 +6,7 @@ from src.maps.editor_config import LIFT_STEP
 class EditorInputMixin:
     def on_wheel(self, direction):
         """Обработка колеса: смена модели или подъём. | Handle wheel: switch model or lift."""
-        mw = self.mouseWatcherNode
-        shift_down = mw is not None and (
-            mw.isButtonDown(KeyboardButton.lshift())
-            or mw.isButtonDown(KeyboardButton.rshift())
-        )
-        if shift_down:
+        if self.is_shift_down(self.mouseWatcherNode):
             self.preview_lift += direction * LIFT_STEP
             self.update_ui_text()
         elif direction > 0:
@@ -25,10 +20,7 @@ class EditorInputMixin:
 
     def handle_step_rotation(self, mw):
         """Пошаговый поворот на 90° и масштаб клавишами. | Step rotation by 90° and scale keys."""
-        shift_down = (
-            mw.isButtonDown(KeyboardButton.lshift())
-            or mw.isButtonDown(KeyboardButton.rshift())
-        )
+        shift_down = self.is_shift_down(mw)
 
         changed = False
 

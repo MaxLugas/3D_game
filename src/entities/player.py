@@ -1,6 +1,18 @@
+import os
+
 from direct.actor.Actor import Actor
-from src.config import JUMP_POWER, MOVE_SPEED, SPRINT_SPEED_MULTIPLIER, GRAVITY, MAP_SIZE, SHOW_BOUNDS
-from src.config import PLAYER_SCALE, PLAYER_HEADING
+from src.config import (
+    JUMP_POWER,
+    MOVE_SPEED,
+    SPRINT_SPEED_MULTIPLIER,
+    GRAVITY,
+    MAP_SIZE,
+    SHOW_BOUNDS,
+    PLAYER_SCALE,
+    PLAYER_HEADING,
+    PLAYER_MODEL,
+    MODELS_DIR,
+)
 
 
 class Player:
@@ -22,11 +34,10 @@ class Player:
         self.map_size = map_size
 
         self.root = render.attachNewNode("player_root")
-        self.root.setPos(0, 0, 0)
 
         self.actor = None
         if with_model:
-            self.actor = Actor("assets/models/UAL1_Standard.bam")
+            self.actor = Actor(os.path.join(MODELS_DIR, PLAYER_MODEL))
             self.actor.reparentTo(self.root)
             self.actor.setScale(PLAYER_SCALE)
             self.actor.setPos(0, 0, 0)
@@ -38,7 +49,7 @@ class Player:
         self.velocity_z = 0
         self.is_grounded = True
 
-        self._current_anim = None
+        self.current_anim = None
         self.oneshot_anim = None
         self.jump_state = None
         self.spell_state = None
@@ -57,7 +68,7 @@ class Player:
                 if self.actor is not None:
                     self.actor.stop()
                 self.spell_state = None
-                self._current_anim = None
+                self.current_anim = None
                 self.velocity_z = JUMP_POWER
                 self.is_grounded = False
                 self.play_animation("Jump_Start")
@@ -84,7 +95,7 @@ class Player:
             self.spell_state = "enter"
             self.actor.stop()
             self.actor.play("Spell_Simple_Enter")
-            self._current_anim = None
+            self.current_anim = None
 
     def play_animation(self, anim_name):
         """Однократное воспроизведение анимации | Play one-shot animation"""
@@ -93,7 +104,7 @@ class Player:
         self.actor.stop()
         self.actor.play(anim_name)
         self.oneshot_anim = anim_name
-        self._current_anim = None
+        self.current_anim = None
 
     def update_movement(self, dt):
         """Перемещение игрока клавишами WASD | Move player from WASD keys"""
@@ -152,7 +163,7 @@ class Player:
         if self.spell_state:
             if self.spell_state == "loop" and (self.keys["w"] or self.keys["a"] or self.keys["s"] or self.keys["d"]):
                 self.actor.stop()
-                self._current_anim = None
+                self.current_anim = None
                 self.actor.play("Spell_Simple_Exit")
                 self.spell_state = "exit"
 
@@ -170,12 +181,12 @@ class Player:
                     self.actor.stop()
                     self.actor.loop("Spell_Simple_Loop")
                     self.spell_state = "loop"
-                    self._current_anim = None
+                    self.current_anim = None
             elif self.spell_state == "exit":
                 ctrl = self.actor.getAnimControl("Spell_Simple_Exit")
                 if not ctrl or not ctrl.isPlaying():
                     self.spell_state = None
-                    self._current_anim = None
+                    self.current_anim = None
 
             if self.spell_state:
                 return
@@ -213,7 +224,7 @@ class Player:
             moving = self.keys["w"] or self.keys["a"] or self.keys["s"] or self.keys["d"]
             sprinting = moving and self.shift_down
             target = "Sprint_Loop" if sprinting else ("Walk_Loop" if moving else "Idle_Loop")
-            if target != self._current_anim:
+            if target != self.current_anim:
                 self.actor.stop()
                 self.actor.loop(target)
-                self._current_anim = target
+                self.current_anim = target

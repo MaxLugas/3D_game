@@ -1,10 +1,9 @@
 import os
 
-from panda3d.core import CollisionNode, CollisionBox, Point3, BitMask32
+from panda3d.core import BitMask32
 
-from config import SHOW_BOUNDS
-from config import OBSTACLE_MASK_BIT
-from src.maps.editor_config import MODELS_DIR
+from src.config import SHOW_BOUNDS, OBSTACLE_MASK_BIT, MODELS_DIR, PICKUP_MODEL
+from src.maps.model_loader import create_bounds_collider
 
 
 class PickupItem:
@@ -12,7 +11,7 @@ class PickupItem:
         """Создаёт подбираемый предмет (статуя). | Create pickup item (statue)."""
         self.render = render
 
-        self.model = loader.loadModel(os.path.join(MODELS_DIR, "statue.bam"))
+        self.model = loader.loadModel(os.path.join(MODELS_DIR, PICKUP_MODEL))
         self.model.reparentTo(render)
         scale = scale if scale else 1
         self.model.setScale(scale)
@@ -21,15 +20,13 @@ class PickupItem:
         if SHOW_BOUNDS:
             self.model.showBounds()
 
-        node = CollisionNode("yellowCube")
-        # Коллайдер строится из размеров модели, как для статичных объектов | Collider built from model bounds, like for static objects
-        lmin, lmax = self.model.getTightBounds(self.model)
-        center = (lmin + lmax) * 0.5
-        half = (lmax - lmin) * 0.5
-        node.addSolid(CollisionBox(Point3(center.x, center.y, center.z), half.x, half.y, half.z))
-        node.setIntoCollideMask(BitMask32.bit(1) | BitMask32.bit(2) | BitMask32.bit(OBSTACLE_MASK_BIT))
+        collider_node = create_bounds_collider(
+            self.model,
+            f"pickup_{id(self.model)}",
+            into_mask=BitMask32.bit(1) | BitMask32.bit(2) | BitMask32.bit(OBSTACLE_MASK_BIT),
+        )
 
-        self.collider = self.model.attachNewNode(node)
+        self.collider = self.model.attachNewNode(collider_node)
 
     def is_available(self):
         """Доступен ли предмет для подбора. | Check if item is available."""

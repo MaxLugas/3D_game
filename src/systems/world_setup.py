@@ -11,6 +11,10 @@ from panda3d.core import (
     CollisionHandlerQueue,
     Point3,
     BitMask32,
+    KeyboardButton,
+    ModifierButtons,
+    WindowProperties,
+    TransparencyAttrib,
 )
 
 from src.config import (
@@ -20,9 +24,23 @@ from src.config import (
     SUN_COLOR,
     SUN_HPR,
     GROUND_THICKNESS,
+    GROUND_TOLERANCE,
     PLAYER_COLLISION_CENTER,
     PLAYER_COLLISION_RADIUS,
 )
+
+
+def create_crosshair(aspect2d):
+    """Создаёт прицел в центре экрана | Create crosshair at screen center"""
+    card_maker = CardMaker("crosshair")
+    card_maker.setFrame(-0.01, 0.01, -0.01, 0.01)
+    crosshair = aspect2d.attachNewNode(card_maker.generate())
+    crosshair.setColor(1, 1, 1, 1)
+    crosshair.setTransparency(TransparencyAttrib.MAlpha)
+    crosshair.setBin("fixed", 100)
+    crosshair.setDepthTest(False)
+    crosshair.setDepthWrite(False)
+    return crosshair
 
 
 class WorldSetupMixin:
@@ -90,3 +108,49 @@ class WorldSetupMixin:
         if hasattr(self.win, "movePointer"):
             self.win.movePointer(0, self.win.getXSize() // 2, self.win.getYSize() // 2)
         return task.done
+
+    def setup_window(self, width, height):
+        """Настраивает окно: размер и скрытый курсор | Setup window: size and hidden cursor"""
+        props = WindowProperties()
+        props.setCursorHidden(True)
+        props.setSize(width, height)
+        self.win.requestProperties(props)
+
+    def bind_movement_keys(self, player):
+        """Привязывает WASD игрока | Bind WASD movement keys"""
+        for key in player.keys:
+            self.accept(key, player.set_key, [key, True])
+            self.accept(f"{key}-up", player.set_key, [key, False])
+
+    def clear_modifier_buttons(self):
+        """Убирает модификаторы у кнопок | Clear modifier buttons"""
+        if self.mouseWatcherNode is not None:
+            self.mouseWatcherNode.set_modifier_buttons(ModifierButtons())
+        if self.buttonThrowers is not None:
+            for thrower in self.buttonThrowers:
+                thrower.node().set_modifier_buttons(ModifierButtons())
+
+    def is_shift_down(self, mouse_watcher):
+        """Зажат ли Shift | Is Shift held"""
+        if mouse_watcher is None:
+            return False
+        return (
+            mouse_watcher.isButtonDown(KeyboardButton.lshift())
+            or mouse_watcher.isButtonDown(KeyboardButton.rshift())
+        )
+
+    def update_grounding(self, player):
+        """Определяет приземление по лучу к земле | Detect landing with ground ray"""
+        self.ground_queue.clearEntries()
+        self.ground_trav.traverse(self.render)
+
+        player.is_grounded = False
+
+        if self.ground_queue.getNumEntries() > 0:
+            self.ground_queue.sortEntries()
+            entry = self.ground_queue.getEntry(0)
+            z = entry.getSurfacePoint(self.render).getZ()
+            if player.root.getZ() <= z + GROUND_TOLERANCE and player.velocity_z <= 0:
+                player.is_grounded = True
+                player.root.setZ(z)
+                player.velocity_z = 0

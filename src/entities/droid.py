@@ -3,13 +3,24 @@ import os
 from math import atan2, degrees
 
 from direct.actor.Actor import Actor
-from panda3d.core import CollisionNode, CollisionBox, CollisionRay, Point3, BitMask32, LVector3
+from panda3d.core import CollisionRay, CollisionNode, BitMask32, LVector3
 from panda3d.core import CollisionTraverser, CollisionHandlerQueue
-from src.config import SHOW_BOUNDS, OBSTACLE_MASK_BIT
-from src.core.npc_config import DROID_AGGRO_DISTANCE, DROID_ATTACK_DISTANCE, DROID_RUN_SPEED
-from src.core.npc_config import DROID_SEPARATION_DISTANCE
-from src.core.npc_config import DROID_AVOID_LOOKAHEAD, DROID_AVOID_SPACING, DROID_AVOID_STRENGTH
-from src.maps.editor_config import MODELS_DIR
+from src.config import (
+    SHOW_BOUNDS,
+    OBSTACLE_MASK_BIT,
+    MODELS_DIR,
+)
+from src.core.npc_config import (
+    DROID_MODEL,
+    DROID_AGGRO_DISTANCE,
+    DROID_ATTACK_DISTANCE,
+    DROID_RUN_SPEED,
+    DROID_SEPARATION_DISTANCE,
+    DROID_AVOID_LOOKAHEAD,
+    DROID_AVOID_SPACING,
+    DROID_AVOID_STRENGTH,
+)
+from src.maps.model_loader import create_bounds_collider
 
 
 class Droid:
@@ -18,7 +29,7 @@ class Droid:
         self.render = render
         self.scale = scale
 
-        self.actor = Actor(os.path.join(MODELS_DIR, "Droid.bam"))
+        self.actor = Actor(os.path.join(MODELS_DIR, DROID_MODEL))
         self.actor.reparentTo(render)
         self.actor.setScale(scale)
         self.actor.setPos(pos)
@@ -37,15 +48,13 @@ class Droid:
         self.collider_center = (lmin + lmax) * 0.5
         self.collider_half = (lmax - lmin) * 0.5
 
-        node = CollisionNode(f"droid_{id(self)}")
-        node.addSolid(CollisionBox(
-            Point3(self.collider_center.x, self.collider_center.y, self.collider_center.z),
-            self.collider_half.x, self.collider_half.y, self.collider_half.z,
-        ))
-        node.setIntoCollideMask(BitMask32.bit(1))
-        node.setFromCollideMask(BitMask32.bit(OBSTACLE_MASK_BIT))
-
-        self.collider = self.actor.attachNewNode(node)
+        collider_node = create_bounds_collider(
+            self.actor,
+            f"droid_{id(self)}",
+            into_mask=BitMask32.bit(1),
+            from_mask=BitMask32.bit(OBSTACLE_MASK_BIT),
+        )
+        self.collider = self.actor.attachNewNode(collider_node)
 
         self.pusher = pusher
         self.collision_trav = collision_trav
@@ -111,11 +120,11 @@ class Droid:
                 self.actor.stop()
                 self.actor.play("Attack_02")
             else:
-                self._move_toward(player_pos, dt, others)
+                self.move_toward(player_pos, dt, others)
         elif self.attacking:
             ctrl = self.actor.getAnimControl("Attack_02")
             if ctrl and ctrl.isPlaying():
-                self._look_at_player(player_pos)
+                self.look_at_player(player_pos)
             else:
                 self.attacking = False
                 if dist < DROID_ATTACK_DISTANCE:
@@ -131,7 +140,7 @@ class Droid:
                     self.actor.stop()
                     self.actor.loop("Idle")
 
-    def _look_at_player(self, player_pos):
+    def look_at_player(self, player_pos):
         """
         Поворачивает дроида к игроку
         Rotates droid to face the player
@@ -142,12 +151,12 @@ class Droid:
         if direction.lengthSquared() > 0.0001:
             self.actor.setH(degrees(atan2(direction.x, -direction.y)))
 
-    def _move_toward(self, player_pos, dt, others=()):
+    def move_toward(self, player_pos, dt, others=()):
         """
         Движение к цели с разделением и обходом препятствий
         Move toward target with separation and obstacle avoidance
         """
-        self._look_at_player(player_pos)
+        self.look_at_player(player_pos)
 
         direction = player_pos - self.actor.getPos(self.render)
         direction.setZ(0)
@@ -164,7 +173,7 @@ class Droid:
         else:
             base = direction
 
-        move = base + self._avoid_obstacle(base)
+        move = base + self.avoid_obstacle(base)
         if move.lengthSquared() > 0.0001:
             move.normalize()
         else:
@@ -172,7 +181,7 @@ class Droid:
 
         self.actor.setPos(self.actor.getPos(self.render) + move * DROID_RUN_SPEED * dt)
 
-    def _avoid_obstacle(self, move):
+    def avoid_obstacle(self, move):
         """
         Обход препятствий тремя лучами
         Obstacle avoidance with three rays

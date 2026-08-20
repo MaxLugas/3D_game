@@ -4,13 +4,12 @@ from direct.actor.Actor import Actor
 from direct.showbase.ShowBaseGlobal import globalClock
 from panda3d.core import LVector3, LPoint3
 
-from src.config import MAP_SIZE
+from src.config import MAP_SIZE, MODELS_DIR
 from src.maps.editor_config import (
     GHOST_COLOR,
     GHOST_NORMAL_MODELS,
     GHOST_WARN_COLOR,
     COLLISION_WARN_COLOR,
-    MODELS_DIR,
     MODEL_ROTATE_SPEED,
     PLACEMENT_DISTANCE,
 )

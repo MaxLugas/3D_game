@@ -1,7 +1,7 @@
 import json
 import os
 
-from src.maps.editor_config import MAP_FILE
+from src.config import MAP_FILE
 
 
 class EditorMapIoMixin:

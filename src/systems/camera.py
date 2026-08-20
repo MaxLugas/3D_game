@@ -1,25 +1,49 @@
 from panda3d.core import Vec3
-from src.config import MOUSE_SENSITIVITY, CAMERA_DISTANCE, CAMERA_HEIGHT, CAMERA_PITCH_MIN, CAMERA_PITCH_MAX
-from src.config import CAMERA_TARGET_OFFSET, CAMERA_PITCH_DIVISOR, CAMERA_ZOOM_DISTANCE_POSITIVE
-from src.config import CAMERA_ZOOM_DISTANCE_NEGATIVE, CAMERA_ZOOM_HEIGHT, CAMERA_LERP_SPEED
+from src.config import (
+    MOUSE_SENSITIVITY,
+    CAMERA_DISTANCE,
+    CAMERA_HEIGHT,
+    CAMERA_PITCH_MIN,
+    CAMERA_PITCH_MAX,
+    CAMERA_TARGET_OFFSET,
+    CAMERA_PITCH_DIVISOR,
+    CAMERA_ZOOM_DISTANCE_POSITIVE,
+    CAMERA_ZOOM_DISTANCE_NEGATIVE,
+    CAMERA_ZOOM_HEIGHT,
+    CAMERA_LERP_SPEED,
+)
+
+PARAM_NAMES = (
+    "mouse_sensitivity", "camera_distance", "camera_height",
+    "pitch_min", "pitch_max", "pitch_divisor",
+    "zoom_dist_positive", "zoom_dist_negative", "zoom_height", "lerp_speed",
+)
+
+DEFAULT_CAMERA_PARAMS = {
+    "mouse_sensitivity": MOUSE_SENSITIVITY,
+    "camera_distance": CAMERA_DISTANCE,
+    "camera_height": CAMERA_HEIGHT,
+    "pitch_min": CAMERA_PITCH_MIN,
+    "pitch_max": CAMERA_PITCH_MAX,
+    "pitch_divisor": CAMERA_PITCH_DIVISOR,
+    "zoom_dist_positive": CAMERA_ZOOM_DISTANCE_POSITIVE,
+    "zoom_dist_negative": CAMERA_ZOOM_DISTANCE_NEGATIVE,
+    "zoom_height": CAMERA_ZOOM_HEIGHT,
+    "lerp_speed": CAMERA_LERP_SPEED,
+}
 
 
 class CameraController:
-    def __init__(self, render, player_root, camera):
+    def __init__(self, render, player_root, camera, overrides=None):
         """Создаёт иерархию камеры вокруг игрока | Create camera hierarchy around player"""
         self.camera = camera
         self.player_root = player_root
 
-        self.mouse_sensitivity = MOUSE_SENSITIVITY
-        self.camera_distance = CAMERA_DISTANCE
-        self.camera_height = CAMERA_HEIGHT
-        self.pitch_min = CAMERA_PITCH_MIN
-        self.pitch_max = CAMERA_PITCH_MAX
-        self.pitch_divisor = CAMERA_PITCH_DIVISOR
-        self.zoom_dist_positive = CAMERA_ZOOM_DISTANCE_POSITIVE
-        self.zoom_dist_negative = CAMERA_ZOOM_DISTANCE_NEGATIVE
-        self.zoom_height = CAMERA_ZOOM_HEIGHT
-        self.lerp_speed = CAMERA_LERP_SPEED
+        params = dict(DEFAULT_CAMERA_PARAMS)
+        if overrides:
+            params.update(overrides)
+        for name in PARAM_NAMES:
+            setattr(self, name, params[name])
 
         self.camera_target = player_root.attachNewNode("camera_target")
         self.camera_target.setPos(*CAMERA_TARGET_OFFSET)

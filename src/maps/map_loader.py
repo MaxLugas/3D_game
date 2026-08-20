@@ -1,15 +1,13 @@
 import json
 import os
 
-from panda3d.core import Point3, CollisionNode, CollisionBox, BitMask32
+from panda3d.core import Point3, BitMask32
 
-from src.config import SHOW_BOUNDS, OBSTACLE_MASK_BIT
+from src.config import SHOW_BOUNDS, OBSTACLE_MASK_BIT, MAP_FILE, MODELS_DIR, PICKUP_MODELS
 from src.core.npc_config import DROID_MODELS
-from src.core.objects_config import PICKUP_MODELS
 from src.entities.droid import Droid
 from src.entities.pickup import PickupItem
-from src.maps.editor_config import MAP_FILE, MODELS_DIR
-from src.maps.model_loader import load_model_or_actor
+from src.maps.model_loader import load_model_or_actor, create_bounds_collider
 
 
 class MapLoader:
@@ -61,15 +59,11 @@ class MapLoader:
 
     def setup_collidable_object(self, node):
         """Создаёт коллайдер для статичного объекта. | Create collider for static object."""
-        lmin, lmax = node.getTightBounds(node)
-        center = (lmin + lmax) * 0.5
-        half = (lmax - lmin) * 0.5
-
-        collision = CollisionNode(f"static_{id(node)}")
-        collision.addSolid(CollisionBox(Point3(center.x, center.y, center.z), half.x, half.y, half.z))
-        collision.setIntoCollideMask(BitMask32.bit(1) | BitMask32.bit(OBSTACLE_MASK_BIT))
-        collision.setFromCollideMask(BitMask32.allOff())
-
+        collision = create_bounds_collider(
+            node,
+            f"static_{id(node)}",
+            into_mask=BitMask32.bit(1) | BitMask32.bit(OBSTACLE_MASK_BIT),
+        )
         node.attachNewNode(collision)
 
     def load_model(self, name):

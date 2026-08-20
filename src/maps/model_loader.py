@@ -1,4 +1,5 @@
 from direct.actor.Actor import Actor
+from panda3d.core import CollisionNode, CollisionBox, Point3, BitMask32
 
 
 def pose_t_pose(actor, anims):
@@ -25,3 +26,15 @@ def load_model_or_actor(loader, path):
         return actor
     except Exception:
         return loader.loadModel(path)
+
+
+def create_bounds_collider(node, name, into_mask, from_mask=BitMask32.allOff()):
+    """Создаёт коллайдер-коробку по границам модели | Create box collider from model bounds"""
+    lmin, lmax = node.getTightBounds(node)
+    center = (lmin + lmax) * 0.5
+    half = (lmax - lmin) * 0.5
+    collision = CollisionNode(name)
+    collision.addSolid(CollisionBox(Point3(center.x, center.y, center.z), half.x, half.y, half.z))
+    collision.setIntoCollideMask(into_mask)
+    collision.setFromCollideMask(from_mask)
+    return collision

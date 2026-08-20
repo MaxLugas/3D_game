@@ -3,12 +3,28 @@ import os
 from direct.showbase.ShowBase import ShowBase
 from direct.gui.OnscreenText import OnscreenText
 from direct.showbase.ShowBaseGlobal import globalClock
-from panda3d.core import *
+from panda3d.core import (
+    Filename,
+    KeyboardButton,
+    BitMask32,
+    CollisionRay,
+    CollisionNode,
+    CollisionHandlerQueue,
+    CollisionTraverser,
+    get_model_path,
+)
 
-from src.config import SKY_COLOR, SPELL_RANGE, PICKUP_RANGE, PICKUP_RAY_RANGE, GROUND_TOLERANCE, WINDOW_WIDTH, WINDOW_HEIGHT
+from src.config import (
+    SKY_COLOR,
+    SPELL_RANGE,
+    PICKUP_RANGE,
+    PICKUP_RAY_RANGE,
+    WINDOW_WIDTH,
+    WINDOW_HEIGHT,
+)
 from src.entities.player import Player
 from src.systems.camera import CameraController
-from src.systems.world_setup import WorldSetupMixin
+from src.systems.world_setup import WorldSetupMixin, create_crosshair
 from src.systems.minimap import Minimap
 from src.maps.map_loader import MapLoader
 
@@ -48,22 +64,15 @@ class Game(WorldSetupMixin, ShowBase):
             self.pickups,
         )
 
-        for k in self.player.keys:
-            self.accept(k, self.player.set_key, [k, True])
-            self.accept(f"{k}-up", self.player.set_key, [k, False])
+        self.bind_movement_keys(self.player)
 
         self.accept("space", self.player.jump)
         self.accept("mouse1", self.on_shoot)
         self.accept("e", self.pickup)
 
-        self.mouseWatcherNode.set_modifier_buttons(ModifierButtons())
-        for thrower in self.buttonThrowers:
-            thrower.node().set_modifier_buttons(ModifierButtons())
+        self.clear_modifier_buttons()
 
-        props = WindowProperties()
-        props.setCursorHidden(True)
-        props.setSize(WINDOW_WIDTH, WINDOW_HEIGHT)
-        self.win.requestProperties(props)
+        self.setup_window(WINDOW_WIDTH, WINDOW_HEIGHT)
 
         self.taskMgr.doMethodLater(0.1, self.init_mouse, "init_mouse")
         self.taskMgr.add(self.update, "update")
@@ -72,41 +81,42 @@ class Game(WorldSetupMixin, ShowBase):
         """Настройка коллайдеров: игрок, лучи заклинания и подбора | Setup colliders: player, spell and pickup rays"""
         self.setup_player_collision()
 
-        self.spell_ray = CollisionRay()
-        spell_ray_node = CollisionNode("spellRay")
-        spell_ray_node.addSolid(self.spell_ray)
-        spell_ray_node.setFromCollideMask(BitMask32.bit(1))
-        spell_ray_node.setIntoCollideMask(BitMask32.allOff())
-
-        self.spell_ray_np = self.camera.attachNewNode(spell_ray_node)
-        self.spell_queue = CollisionHandlerQueue()
-        self.spell_trav = CollisionTraverser()
-        self.spell_trav.addCollider(self.spell_ray_np, self.spell_queue)
-
-        self.pickup_ray = CollisionRay()
-        pickup_ray_node = CollisionNode("pickupRay")
-        pickup_ray_node.addSolid(self.pickup_ray)
-        pickup_ray_node.setFromCollideMask(BitMask32.bit(2))
-        pickup_ray_node.setIntoCollideMask(BitMask32.allOff())
-
-        self.pickup_ray_np = self.camera.attachNewNode(pickup_ray_node)
-        self.pickup_queue = CollisionHandlerQueue()
-        self.pickup_trav = CollisionTraverser()
-        self.pickup_trav.addCollider(self.pickup_ray_np, self.pickup_queue)
+        self.spell_ray, self.spell_queue, self.spell_trav = self.create_camera_ray("spellRay", 1)
+        self.pickup_ray, self.pickup_queue, self.pickup_trav = self.create_camera_ray("pickupRay", 2)
 
         self.setup_ground_ray()
 
+    def create_camera_ray(self, name, mask_bit):
+        """Создаёт луч из камеры | Create a ray from the camera"""
+        ray = CollisionRay()
+        ray_node = CollisionNode(name)
+        ray_node.addSolid(ray)
+        ray_node.setFromCollideMask(BitMask32.bit(mask_bit))
+        ray_node.setIntoCollideMask(BitMask32.allOff())
+
+        ray_np = self.camera.attachNewNode(ray_node)
+        queue = CollisionHandlerQueue()
+        trav = CollisionTraverser()
+        trav.addCollider(ray_np, queue)
+        return ray, queue, trav
+
+    def cast_ray(self, ray, trav, queue):
+        """Запускает луч и возвращает ближайшее попадание | Cast ray and return closest entry"""
+        ray.setOrigin(0, 0, 0)
+        ray.setDirection(0, 1, 0)
+
+        queue.clearEntries()
+        trav.traverse(self.render)
+
+        if queue.getNumEntries() == 0:
+            return None
+
+        queue.sortEntries()
+        return queue.getEntry(0)
+
     def setup_ui(self):
         """Создаёт прицел и подсказку подбора | Create crosshair and pickup hint"""
-        cm_cross = CardMaker("crosshair")
-        cm_cross.setFrame(-0.01, 0.01, -0.01, 0.01)
-
-        self.crosshair = self.aspect2d.attachNewNode(cm_cross.generate())
-        self.crosshair.setColor(1, 1, 1, 1)
-        self.crosshair.setTransparency(TransparencyAttrib.MAlpha)
-        self.crosshair.setBin("fixed", 100)
-        self.crosshair.setDepthTest(False)
-        self.crosshair.setDepthWrite(False)
+        self.crosshair = create_crosshair(self.aspect2d)
 
         self.pickup_hint = OnscreenText(
             text="[E]",
@@ -119,25 +129,17 @@ class Game(WorldSetupMixin, ShowBase):
 
     def on_shoot(self):
         """Обработчик выстрела | Shoot handler"""
-        self.player.shoot(on_spell_hit=self._perform_shot)
+        self.player.shoot(on_spell_hit=self.perform_shot)
 
-    def _perform_shot(self):
+    def perform_shot(self):
         """Проверка попадания заклинания в дроидов | Check spell hit against droids"""
         alive = [d for d in self.droids if d.is_alive()]
         if not alive:
             return
 
-        self.spell_ray.setOrigin(0, 0, 0)
-        self.spell_ray.setDirection(0, 1, 0)
-
-        self.spell_queue.clearEntries()
-        self.spell_trav.traverse(self.render)
-
-        if self.spell_queue.getNumEntries() == 0:
+        entry = self.cast_ray(self.spell_ray, self.spell_trav, self.spell_queue)
+        if entry is None:
             return
-
-        self.spell_queue.sortEntries()
-        entry = self.spell_queue.getEntry(0)
 
         hit_np = entry.getIntoNodePath()
         dist = (entry.getSurfacePoint(self.render) - self.camera.getPos(self.render)).length()
@@ -163,6 +165,7 @@ class Game(WorldSetupMixin, ShowBase):
             return None
 
         player_pos = self.player.root.getPos(self.render)
+
         nearest = None
         nearest_dist = PICKUP_RANGE
         for p in available:
@@ -173,17 +176,10 @@ class Game(WorldSetupMixin, ShowBase):
         if nearest is not None:
             return nearest
 
-        self.pickup_ray.setOrigin(0, 0, 0)
-        self.pickup_ray.setDirection(0, 1, 0)
-
-        self.pickup_queue.clearEntries()
-        self.pickup_trav.traverse(self.render)
-
-        if self.pickup_queue.getNumEntries() == 0:
+        entry = self.cast_ray(self.pickup_ray, self.pickup_trav, self.pickup_queue)
+        if entry is None:
             return None
 
-        self.pickup_queue.sortEntries()
-        entry = self.pickup_queue.getEntry(0)
         hit_np = entry.getIntoNodePath()
         dist = (entry.getSurfacePoint(self.render) - player_pos).length()
 
@@ -201,26 +197,11 @@ class Game(WorldSetupMixin, ShowBase):
         if tab_held:
             self.minimap.update()
 
-        self.player.shift_down = (
-            self.mouseWatcherNode.isButtonDown(KeyboardButton.lshift())
-            or self.mouseWatcherNode.isButtonDown(KeyboardButton.rshift())
-        )
+        self.player.shift_down = self.is_shift_down(self.mouseWatcherNode)
 
         self.camera_controller.update(dt, self.win, self.mouseWatcherNode)
 
-        self.ground_queue.clearEntries()
-        self.ground_trav.traverse(self.render)
-
-        self.player.is_grounded = False
-
-        if self.ground_queue.getNumEntries() > 0:
-            self.ground_queue.sortEntries()
-            entry = self.ground_queue.getEntry(0)
-            z = entry.getSurfacePoint(self.render).getZ()
-            if self.player.root.getZ() <= z + GROUND_TOLERANCE and self.player.velocity_z <= 0:
-                self.player.is_grounded = True
-                self.player.root.setZ(z)
-                self.player.velocity_z = 0
+        self.update_grounding(self.player)
 
         if self.can_pickup() is not None:
             self.pickup_hint.show()
@@ -239,6 +220,6 @@ class Game(WorldSetupMixin, ShowBase):
 
         self.collision_trav.traverse(self.render)
 
-        self.player.resolve_animation(on_spell_hit=self._perform_shot)
+        self.player.resolve_animation(on_spell_hit=self.perform_shot)
 
         return task.cont

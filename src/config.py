@@ -1,3 +1,18 @@
+from pathlib import Path
+
+# ================ Пути | Paths ================
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+MODELS_DIR = PROJECT_ROOT / "assets" / "models"          # Директория 3D-моделей | 3D models directory
+MAP_FILE = PROJECT_ROOT / "assets" / "map.json"          # Файл карты | Map file
+ICONS_DIR = PROJECT_ROOT / "assets" / "icons"            # Директория иконок | Icons directory
+GENERATOR_TOOL = PROJECT_ROOT / "tools" / "generate_icons.py"  # Генератор иконок | Icon generator
+
+# ================ Модели | Models ================
+PLAYER_MODEL = "UAL1_Standard.bam"                       # Модель игрока | Player model
+PICKUP_MODEL = "statue.bam"                              # Модель предмета подбора | Pickup model
+PICKUP_MODELS = (PICKUP_MODEL,)                          # Имена моделей-предметов подбора в map.json | Pickup model names in map.json
+PLAYER_ICON = "player.png"                               # Иконка игрока на миникарте | Player minimap icon
+
 # ================ Игровые параметры | Game Parameters ================
 MAP_SIZE = 50                                    # Размер игрового поля | Game field size
 GRAVITY = -25                                    # Гравитация | Gravity
@@ -39,12 +54,13 @@ WINDOW_WIDTH = 1280                              # Ширина окна | Windo
 WINDOW_HEIGHT = 720                              # Высота окна | Window height
 
 # ================ Миникарта | Minimap ================
-MINIMAP_SIZE = 0.8                                # Размер миникарты | Minimap size
+MINIMAP_SIZE = 0.6                                # Размер миникарты | Minimap size
 MINIMAP_MARGIN = 0.01                             # Отступ от края экрана | Margin from screen edge
+MINIMAP_VIEW_RADIUS = 20                          # Радиус обзора миникарты (зум) | Minimap view radius (zoom)
 MINIMAP_BG_ALPHA = 0.7                            # Прозрачность фона | Background transparency
 MINIMAP_PLAYER_MARKER_SCALE = 0.05                # Масштаб маркера игрока | Player marker scale
-MINIMAP_NPC_MARKER_SCALE = MINIMAP_SIZE / 20      # Масштаб маркера NPC | NPC marker scale
-MINIMAP_OBJECT_MARKER_SCALE = MINIMAP_SIZE / 20   # Масштаб маркера объекта | Object marker scale
+MINIMAP_NPC_MARKER_SCALE = MINIMAP_SIZE / 10      # Масштаб маркера NPC | NPC marker scale
+MINIMAP_OBJECT_MARKER_SCALE = MINIMAP_SIZE / 10   # Масштаб маркера объекта | Object marker scale
 
 # ================ Освещение и окружение | Lighting and Environment ================
 SHOW_BOUNDS = False                               # Отображение отладочных границ | Show debug bounds
