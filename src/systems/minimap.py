@@ -18,7 +18,6 @@ from src.config import (
     PROJECT_ROOT,
     PLAYER_MODEL,
     PLAYER_ICON,
-    PICKUP_MODEL,
 )
 from src.core.npc_config import DROID_MODEL
 
@@ -32,8 +31,8 @@ def needed_models(objects, droids, pickups):
     models = {name for name, _ in objects}
     if droids:
         models.add(DROID_MODEL)
-    if pickups:
-        models.add(PICKUP_MODEL)
+    for pickup in pickups:
+        models.add(pickup.model_name)
     return models
 
 
@@ -174,8 +173,8 @@ class Minimap:
             )
             self.markers.append((droid, marker))
 
-        pickup_icon = self.model_icons.get(PICKUP_MODEL)
         for pickup in self.pickups:
+            pickup_icon = self.model_icons.get(pickup.model_name)
             marker = self.create_marker(
                 f"pickup_{id(pickup)}", MINIMAP_OBJECT_MARKER_SCALE,
                 texture=pickup_icon, color=(1, 1, 0, 1) if pickup_icon is None else None,

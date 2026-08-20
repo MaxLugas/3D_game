@@ -2,16 +2,17 @@ import os
 
 from panda3d.core import BitMask32
 
-from src.config import SHOW_BOUNDS, OBSTACLE_MASK_BIT, MODELS_DIR, PICKUP_MODEL
+from src.config import SHOW_BOUNDS, OBSTACLE_MASK_BIT, MODELS_DIR
 from src.maps.model_loader import create_bounds_collider
 
 
 class PickupItem:
-    def __init__(self, render, loader, pos, heading=0, scale=None):
-        """Создаёт подбираемый предмет (статуя). | Create pickup item (statue)."""
+    def __init__(self, render, loader, model, pos, heading=0, scale=None):
+        """Создаёт подбираемый предмет. | Create pickup item."""
         self.render = render
+        self.model_name = model
 
-        self.model = loader.loadModel(os.path.join(MODELS_DIR, PICKUP_MODEL))
+        self.model = loader.loadModel(os.path.join(MODELS_DIR, model))
         self.model.reparentTo(render)
         scale = scale if scale else 1
         self.model.setScale(scale)

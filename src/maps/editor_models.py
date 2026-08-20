@@ -4,7 +4,7 @@ from direct.actor.Actor import Actor
 from direct.showbase.ShowBaseGlobal import globalClock
 from panda3d.core import LVector3, LPoint3
 
-from src.config import MAP_SIZE, MODELS_DIR
+from src.config import MAP_SIZE, MODELS_DIR, PLAYER_MODEL
 from src.maps.editor_config import (
     GHOST_COLOR,
     GHOST_NORMAL_MODELS,
@@ -109,6 +109,22 @@ class EditorModelsMixin:
             "pitch": round(self.pitch) % 360,
             "scale": round(self.scale, 2),
         }
+
+        if self.current_model == PLAYER_MODEL:
+            for i, (old_entry, old_node, _, _) in enumerate(self.placed):
+                if old_entry["model"] == PLAYER_MODEL:
+                    old_entry["pos"] = entry["pos"]
+                    old_entry["heading"] = entry["heading"]
+                    old_entry["pitch"] = entry["pitch"]
+                    old_entry["scale"] = entry["scale"]
+                    old_node.setPos(*entry["pos"])
+                    old_node.setH(entry["heading"])
+                    old_node.setP(entry["pitch"])
+                    old_node.setScale(entry["scale"])
+                    self.notice = "player start moved"
+                    self.update_ui_text()
+                    self.taskMgr.doMethodLater(2.0, self.clear_notice, "clear_notice_player_start")
+                    return
 
         node = self.create_world_object(self.current_model, entry["pos"], entry["heading"], entry["pitch"], entry["scale"])
         bmin, bmax = node.getTightBounds(self.render)

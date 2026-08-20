@@ -9,8 +9,7 @@ GENERATOR_TOOL = PROJECT_ROOT / "tools" / "generate_icons.py"  # Генерат�
 
 # ================ Модели | Models ================
 PLAYER_MODEL = "UAL1_Standard.bam"                       # Модель игрока | Player model
-PICKUP_MODEL = "statue.bam"                              # Модель предмета подбора | Pickup model
-PICKUP_MODELS = (PICKUP_MODEL,)                          # Имена моделей-предметов подбора в map.json | Pickup model names in map.json
+PICKUP_MODELS = ("statue.bam", 'chest.bam')              # Имена моделей-предметов подбора в map.json | Pickup model names in map.json
 PLAYER_ICON = "player.png"                               # Иконка игрока на миникарте | Player minimap icon
 
 # ================ Игровые параметры | Game Parameters ================

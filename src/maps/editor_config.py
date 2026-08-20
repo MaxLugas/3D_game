@@ -1,3 +1,5 @@
+from src.config import PLAYER_MODEL
+
 # ================ Размещение объектов | Object Placement ================
 PLACEMENT_DISTANCE = 6                           # Дистанция размещения | Placement distance
 
@@ -29,4 +31,4 @@ EDITOR_GRAVITY = -40                             # Гравитация | Gravit
 GHOST_COLOR = (0.4, 1, 0.4, 1)                   # Цвет призрака (можно размещать) | Ghost color (can place)
 GHOST_WARN_COLOR = (1, 1, 0, 1)                  # Цвет предупреждения | Warning color
 COLLISION_WARN_COLOR = (1, 0.3, 0.3, 1)          # Цвет запрета размещения | Collision warning color
-GHOST_NORMAL_MODELS = ("UAL1_Standard.bam",)     # Модели без цветной подсветки | Models without color tint
+GHOST_NORMAL_MODELS = (PLAYER_MODEL,)            # Модели без цветной подсветки | Models without color tint

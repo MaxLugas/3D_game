@@ -51,6 +51,11 @@ class Game(WorldSetupMixin, ShowBase):
         self.map_loader = MapLoader(self.render, self.loader, self.pusher, self.collision_trav)
         self.map_loader.load_map()
 
+        start = self.map_loader.player_start
+        if start is not None:
+            self.player.root.setPos(start[0])
+            self.camera_controller.yaw = start[1] + 180
+
         self.droids = self.map_loader.droids
         self.pickups = self.map_loader.pickups
 

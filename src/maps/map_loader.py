@@ -3,7 +3,7 @@ import os
 
 from panda3d.core import Point3, BitMask32
 
-from src.config import SHOW_BOUNDS, OBSTACLE_MASK_BIT, MAP_FILE, MODELS_DIR, PICKUP_MODELS
+from src.config import SHOW_BOUNDS, OBSTACLE_MASK_BIT, MAP_FILE, MODELS_DIR, PICKUP_MODELS, PLAYER_MODEL
 from src.core.npc_config import DROID_MODELS
 from src.entities.droid import Droid
 from src.entities.pickup import PickupItem
@@ -19,6 +19,7 @@ class MapLoader:
         self.objects = []
         self.droids = []
         self.pickups = []
+        self.player_start = None
 
     def load_map(self, path=MAP_FILE):
         """
@@ -38,11 +39,15 @@ class MapLoader:
                 pitch = item.get("pitch", 0)
                 scale = item.get("scale")
 
+                if name == PLAYER_MODEL:
+                    if self.player_start is None:
+                        self.player_start = (pos, heading)
+                    continue
                 if name in DROID_MODELS:
                     droid = Droid(self.render, pos, self.pusher, self.collision_trav, heading=heading, scale=scale)
                     self.droids.append(droid)
                 elif name in PICKUP_MODELS:
-                    pickup = PickupItem(self.render, self.loader, pos, heading=heading, scale=scale)
+                    pickup = PickupItem(self.render, self.loader, name, pos, heading=heading, scale=scale)
                     self.pickups.append(pickup)
                 else:
                     node = self.load_model(name)
