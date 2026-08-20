@@ -5,15 +5,6 @@ from src.config import MAP_FILE
 
 
 class EditorMapIoMixin:
-    def delete_object(self):
-        """Удаляет последний размещённый объект | Delete last placed object"""
-        if not self.placed:
-            return
-
-        entry, node, _, _ = self.placed.pop()
-        self.destroy_node(node)
-        self.update_ui_text()
-
     def load_entries(self, data):
         """Разворачивает сгруппированную структуру карты в записи | Expand grouped map data into entries"""
         for model, items in data.get("objects", {}).items():

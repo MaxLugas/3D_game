@@ -1,7 +1,6 @@
 import sys
 from pathlib import Path
 
-import gltf
 from gltf import GltfSettings
 from gltf._converter import Converter
 from gltf.parseutils import parse_gltf_file

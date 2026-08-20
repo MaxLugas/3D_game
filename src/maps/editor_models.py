@@ -2,7 +2,7 @@ import os
 
 from direct.actor.Actor import Actor
 from direct.showbase.ShowBaseGlobal import globalClock
-from panda3d.core import LVector3, LPoint3
+from panda3d.core import LVector3, LPoint3, BitMask32
 
 from src.config import MAP_SIZE, MODELS_DIR, PLAYER_MODEL
 from src.maps.editor_config import (
@@ -12,8 +12,9 @@ from src.maps.editor_config import (
     COLLISION_WARN_COLOR,
     MODEL_ROTATE_SPEED,
     PLACEMENT_DISTANCE,
+    PICK_MASK_BIT,
 )
-from src.maps.model_loader import load_model_or_actor
+from src.maps.model_loader import load_model_or_actor, create_bounds_collider
 
 
 class EditorModelsMixin:
@@ -156,7 +157,31 @@ class EditorModelsMixin:
         node.setH(heading)
         if pitch:
             node.setP(pitch)
+
+        pick_node = create_bounds_collider(
+            node,
+            f"pick_{id(node)}",
+            into_mask=BitMask32.bit(PICK_MASK_BIT),
+        )
+        node.attachNewNode(pick_node)
         return node
+
+    def delete_hovered_object(self):
+        """Удаляет объект под прицелом по ПКМ | Delete object under the crosshair with RMB"""
+        entry = self.cast_ray(self.pick_ray, self.pick_trav, self.pick_queue)
+        if entry is None:
+            return
+
+        hit_np = entry.getIntoNodePath()
+
+        for i, (placed_entry, node, _, _) in enumerate(self.placed):
+            if hit_np.getParent() == node:
+                self.destroy_node(node)
+                del self.placed[i]
+                self.notice = f"deleted {placed_entry['model']}"
+                self.update_ui_text()
+                self.taskMgr.doMethodLater(2.0, self.clear_notice, "clear_notice_delete")
+                return
 
     def refresh_ghost_position(self):
         """Обновляет позицию призрака по направлению взгляда | Update ghost position from camera aim"""

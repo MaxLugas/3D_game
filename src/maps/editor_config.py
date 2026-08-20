@@ -2,6 +2,7 @@ from src.config import PLAYER_MODEL
 
 # ================ Размещение объектов | Object Placement ================
 PLACEMENT_DISTANCE = 6                           # Дистанция размещения | Placement distance
+PICK_MASK_BIT = 2                                # Бит маски для пикинга объектов | Mask bit for object picking
 
 # ================ Камера редактора | Editor Camera ================
 EDITOR_CAMERA_PITCH = -20                        # Начальный наклон камеры | Camera start pitch

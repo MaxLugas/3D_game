@@ -1,19 +1,13 @@
 from direct.gui.OnscreenText import OnscreenText
-from panda3d.core import CardMaker, TextNode, TransparencyAttrib
+from panda3d.core import TextNode
+
+from src.systems.world_setup import create_crosshair
 
 
 class EditorUiMixin:
     def setup_ui(self):
         """Создаёт прицел и статус панель | Create crosshair and status panel"""
-        cm_cross = CardMaker("crosshair")
-        cm_cross.setFrame(-0.01, 0.01, -0.01, 0.01)
-
-        self.crosshair = self.aspect2d.attachNewNode(cm_cross.generate())
-        self.crosshair.setColor(1, 1, 1, 1)
-        self.crosshair.setTransparency(TransparencyAttrib.MAlpha)
-        self.crosshair.setBin("fixed", 100)
-        self.crosshair.setDepthTest(False)
-        self.crosshair.setDepthWrite(False)
+        self.crosshair = create_crosshair(self.aspect2d)
 
         self.status_lines = []
         for i in range(6):
@@ -40,7 +34,7 @@ class EditorUiMixin:
         index = self.model_index + 1 if self.models else 0
         lines = [
             f"model: {self.current_model} ({index}/{total})",
-            "wheel: switch model  |  Shift+wheel: lift  |  LMB: place  |  R: rotate  |  Shift+[/]: scale  |  U: undo  |  X: save  |  L: load",
+            "wheel: switch model  |  Shift+wheel: lift  |  LMB: place  |  R: rotate  |  Shift+[/]: scale  |  RMB: delete  |  X: save  |  L: load",
             f"rotate horizontal 90°: Shift + Arrow left / Arrow right: {round(self.heading)}",
             f"rotate vertical 90°: Shift + Arrow up / Arrow down: {round(self.pitch)}",
             f"scale: {self.scale}  height: {round(self.preview_lift, 2)}  placed: {len(self.placed)}",

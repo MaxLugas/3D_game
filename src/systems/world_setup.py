@@ -103,6 +103,34 @@ class WorldSetupMixin:
         self.ground_trav = CollisionTraverser()
         self.ground_trav.addCollider(self.ground_ray_np, self.ground_queue)
 
+    def create_camera_ray(self, name, mask_bit):
+        """Создаёт луч из камеры | Create a ray from the camera"""
+        ray = CollisionRay()
+        ray_node = CollisionNode(name)
+        ray_node.addSolid(ray)
+        ray_node.setFromCollideMask(BitMask32.bit(mask_bit))
+        ray_node.setIntoCollideMask(BitMask32.allOff())
+
+        ray_np = self.camera.attachNewNode(ray_node)
+        queue = CollisionHandlerQueue()
+        trav = CollisionTraverser()
+        trav.addCollider(ray_np, queue)
+        return ray, queue, trav
+
+    def cast_ray(self, ray, trav, queue):
+        """Запускает луч и возвращает ближайшее попадание | Cast ray and return closest entry"""
+        ray.setOrigin(0, 0, 0)
+        ray.setDirection(0, 1, 0)
+
+        queue.clearEntries()
+        trav.traverse(self.render)
+
+        if queue.getNumEntries() == 0:
+            return None
+
+        queue.sortEntries()
+        return queue.getEntry(0)
+
     def init_mouse(self, task):
         """Возвращает курсор в центр экрана | Recenter the mouse cursor"""
         if hasattr(self.win, "movePointer"):

@@ -6,11 +6,6 @@ from direct.showbase.ShowBaseGlobal import globalClock
 from panda3d.core import (
     Filename,
     KeyboardButton,
-    BitMask32,
-    CollisionRay,
-    CollisionNode,
-    CollisionHandlerQueue,
-    CollisionTraverser,
     get_model_path,
 )
 
@@ -90,34 +85,6 @@ class Game(WorldSetupMixin, ShowBase):
         self.pickup_ray, self.pickup_queue, self.pickup_trav = self.create_camera_ray("pickupRay", 2)
 
         self.setup_ground_ray()
-
-    def create_camera_ray(self, name, mask_bit):
-        """Создаёт луч из камеры | Create a ray from the camera"""
-        ray = CollisionRay()
-        ray_node = CollisionNode(name)
-        ray_node.addSolid(ray)
-        ray_node.setFromCollideMask(BitMask32.bit(mask_bit))
-        ray_node.setIntoCollideMask(BitMask32.allOff())
-
-        ray_np = self.camera.attachNewNode(ray_node)
-        queue = CollisionHandlerQueue()
-        trav = CollisionTraverser()
-        trav.addCollider(ray_np, queue)
-        return ray, queue, trav
-
-    def cast_ray(self, ray, trav, queue):
-        """Запускает луч и возвращает ближайшее попадание | Cast ray and return closest entry"""
-        ray.setOrigin(0, 0, 0)
-        ray.setDirection(0, 1, 0)
-
-        queue.clearEntries()
-        trav.traverse(self.render)
-
-        if queue.getNumEntries() == 0:
-            return None
-
-        queue.sortEntries()
-        return queue.getEntry(0)
 
     def setup_ui(self):
         """Создаёт прицел и подсказку подбора | Create crosshair and pickup hint"""

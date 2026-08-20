@@ -13,7 +13,7 @@ from direct.showbase.ShowBaseGlobal import globalClock
 from panda3d.core import Filename, get_model_path
 
 from src.config import WINDOW_WIDTH, WINDOW_HEIGHT, SKY_COLOR, MODELS_DIR
-from src.maps.editor_config import EDITOR_CAMERA_PITCH
+from src.maps.editor_config import EDITOR_CAMERA_PITCH, PICK_MASK_BIT
 from src.maps.editor_camera import EditorCameraController
 from src.maps.editor_input import EditorInputMixin
 from src.maps.editor_map_io import EditorMapIoMixin
@@ -67,7 +67,7 @@ class MapCreatorApp(EditorUiMixin, EditorInputMixin, EditorModelsMixin, EditorMa
         self.bind_movement_keys(self.player)
 
         self.accept("mouse1", self.place_object)
-        self.accept("u", self.delete_object)
+        self.accept("mouse3", self.delete_hovered_object)
         self.accept("x", self.save_map)
         self.accept("l", self.load_map)
         self.accept("r", self.set_rotating, [True])
@@ -86,6 +86,7 @@ class MapCreatorApp(EditorUiMixin, EditorInputMixin, EditorModelsMixin, EditorMa
         """Настройка коллайдеров редактора | Setup editor colliders"""
         self.setup_player_collision()
         self.setup_ground_ray()
+        self.pick_ray, self.pick_queue, self.pick_trav = self.create_camera_ray("pickRay", PICK_MASK_BIT)
 
     def update(self, task):
         """Обновление редактора каждый кадр | Update editor every frame"""

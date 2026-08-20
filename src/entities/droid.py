@@ -48,7 +48,6 @@ class Droid:
         # Коллайдер из границ модели; масштаб наследуется родителем | Collider from model bounds; scale inherited from parent
         lmin, lmax = self.actor.getTightBounds(self.actor)
         self.collider_center = (lmin + lmax) * 0.5
-        self.collider_half = (lmax - lmin) * 0.5
 
         collider_node = create_bounds_collider(
             self.actor,
