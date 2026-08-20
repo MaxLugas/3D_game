@@ -19,7 +19,6 @@ from src.config import (
     PLAYER_MODEL,
     PLAYER_ICON,
 )
-from src.core.npc_config import DROID_MODEL
 
 
 def icon_path(model):
@@ -29,8 +28,8 @@ def icon_path(model):
 def needed_models(objects, droids, pickups):
     """Модели, для которых нужны иконки | Models that need icons"""
     models = {name for name, _ in objects}
-    if droids:
-        models.add(DROID_MODEL)
+    for droid in droids:
+        models.add(droid.model_name)
     for pickup in pickups:
         models.add(pickup.model_name)
     return models
@@ -165,11 +164,11 @@ class Minimap:
             )
             self.markers.append((node, marker))
 
-        npc_icon = self.model_icons.get(DROID_MODEL)
         for droid in self.droids:
+            droid_icon = self.model_icons.get(droid.model_name)
             marker = self.create_marker(
                 f"npc_{id(droid)}", MINIMAP_NPC_MARKER_SCALE,
-                texture=npc_icon, color=(1, 0, 0, 1) if npc_icon is None else None,
+                texture=droid_icon, color=(1, 0, 0, 1) if droid_icon is None else None,
             )
             self.markers.append((droid, marker))
 

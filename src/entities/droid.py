@@ -10,33 +10,35 @@ from src.config import (
     OBSTACLE_MASK_BIT,
     MODELS_DIR,
 )
-from src.core.npc_config import (
-    DROID_MODEL,
-    DROID_AGGRO_DISTANCE,
-    DROID_ATTACK_DISTANCE,
-    DROID_RUN_SPEED,
-    DROID_SEPARATION_DISTANCE,
-    DROID_AVOID_LOOKAHEAD,
-    DROID_AVOID_SPACING,
-    DROID_AVOID_STRENGTH,
-)
+from src.core.npc_config import NPC_MODELS, npc_config
 from src.maps.model_loader import create_bounds_collider
 
 
 class Droid:
-    def __init__(self, render, pos, pusher, collision_trav, heading=0, scale=1):
-        """Создаёт дроида: модель, анимации, коллайдер | Create droid: model, animations, collider"""
+    def __init__(self, render, pos, pusher, collision_trav, model=NPC_MODELS[0], heading=0, scale=1):
+        """Создаёт NPC: модель, анимации, коллайдер | Create NPC: model, animations, collider"""
         self.render = render
+        self.model_name = model
         self.scale = scale
 
-        self.actor = Actor(os.path.join(MODELS_DIR, DROID_MODEL))
+        config = npc_config(model)
+        self.aggro_distance = config["aggro_distance"]
+        self.attack_distance = config["attack_distance"]
+        self.run_speed = config["run_speed"]
+        self.separation_distance = config["separation_distance"]
+        self.avoid_lookahead = config["avoid_lookahead"]
+        self.avoid_spacing = config["avoid_spacing"]
+        self.avoid_strength = config["avoid_strength"]
+        self.anims = config.get("anims", {})
+
+        self.actor = Actor(os.path.join(MODELS_DIR, model))
         self.actor.reparentTo(render)
         self.actor.setScale(scale)
         self.actor.setPos(pos)
         self.actor.setH(heading)
         if SHOW_BOUNDS:
             self.actor.showBounds()
-        self.actor.loop("Idle")
+        self.loop_anim("idle")
 
         self.berserk = False
         self.running = False
@@ -79,12 +81,32 @@ class Droid:
         for np in self.avoid_nodes.values():
             self.avoid_trav.addCollider(np, self.avoid_queue)
 
+    def anim(self, key):
+        """Имя анимации по ключу с запасным вариантом | Anim name by key with fallback"""
+        name = self.anims.get(key)
+        if name is not None and name in self.actor.getAnimNames():
+            return name
+        anims = self.actor.getAnimNames()
+        return anims[0] if anims else None
+
+    def play_anim(self, key):
+        """Однократное воспроизведение анимации по ключу | Play one-shot animation by key"""
+        name = self.anim(key)
+        if name is not None:
+            self.actor.play(name)
+
+    def loop_anim(self, key):
+        """Зацикленная анимация по ключу | Loop animation by key"""
+        name = self.anim(key)
+        if name is not None:
+            self.actor.loop(name)
+
     def is_alive(self):
-        """Жив ли дроид | Check if droid is alive"""
+        """Жив ли NPC | Check if NPC is alive"""
         return not self.actor.isEmpty()
 
     def die(self):
-        """Удаляет дроида и его коллайдеры | Remove droid and its colliders"""
+        """Удаляет NPC и его коллайдеры | Remove NPC and its colliders"""
         self.pusher.removeCollider(self.collider)
         self.collision_trav.removeCollider(self.collider)
         for np in self.avoid_nodes.values():
@@ -92,58 +114,58 @@ class Droid:
         self.actor.cleanup()
 
     def update(self, player_pos, dt, others=()):
-        """Обновление состояния дроида каждый кадр | Update droid state every frame"""
+        """Обновление состояния NPC каждый кадр | Update NPC state every frame"""
         dist = (self.actor.getPos(self.render) - player_pos).length()
 
         # Логика состояний | State machine
-        if not self.berserk and dist < DROID_AGGRO_DISTANCE:
+        if not self.berserk and dist < self.aggro_distance:
             self.berserk = True
             self.running = False
             self.attacking = False
             self.actor.stop()
-            self.actor.play("Berserker_Call")
+            self.play_anim("aggro")
         elif self.berserk and not self.running and not self.attacking:
-            ctrl = self.actor.getAnimControl("Berserker_Call")
+            ctrl = self.actor.getAnimControl(self.anim("aggro"))
             if not ctrl or not ctrl.isPlaying():
                 self.running = True
                 self.actor.stop()
-                self.actor.loop("Running_03")
+                self.loop_anim("run")
         elif self.running:
-            if dist >= DROID_AGGRO_DISTANCE:
+            if dist >= self.aggro_distance:
                 self.berserk = False
                 self.running = False
                 self.actor.stop()
-                self.actor.loop("Idle")
-            elif dist < DROID_ATTACK_DISTANCE:
+                self.loop_anim("idle")
+            elif dist < self.attack_distance:
                 self.running = False
                 self.attacking = True
                 self.actor.stop()
-                self.actor.play("Attack_02")
+                self.play_anim("attack")
             else:
                 self.move_toward(player_pos, dt, others)
         elif self.attacking:
-            ctrl = self.actor.getAnimControl("Attack_02")
+            ctrl = self.actor.getAnimControl(self.anim("attack"))
             if ctrl and ctrl.isPlaying():
                 self.look_at_player(player_pos)
             else:
                 self.attacking = False
-                if dist < DROID_ATTACK_DISTANCE:
+                if dist < self.attack_distance:
                     self.attacking = True
                     self.actor.stop()
-                    self.actor.play("Attack_02")
-                elif dist < DROID_AGGRO_DISTANCE:
+                    self.play_anim("attack")
+                elif dist < self.aggro_distance:
                     self.running = True
                     self.actor.stop()
-                    self.actor.loop("Running_03")
+                    self.loop_anim("run")
                 else:
                     self.berserk = False
                     self.actor.stop()
-                    self.actor.loop("Idle")
+                    self.loop_anim("idle")
 
     def look_at_player(self, player_pos):
         """
-        Поворачивает дроида к игроку
-        Rotates droid to face the player
+        Поворачивает NPC к игроку
+        Rotates NPC to face the player
         """
         direction = player_pos - self.actor.getPos(self.render)
         direction.setZ(0)
@@ -179,7 +201,7 @@ class Droid:
         else:
             move = base
 
-        self.actor.setPos(self.actor.getPos(self.render) + move * DROID_RUN_SPEED * dt)
+        self.actor.setPos(self.actor.getPos(self.render) + move * self.run_speed * dt)
 
     def avoid_obstacle(self, move):
         """
@@ -191,9 +213,9 @@ class Droid:
         perp = LVector3(-move.y, move.x, 0)
 
         for name, offset in (
-            ("left", perp * DROID_AVOID_SPACING),
+            ("left", perp * self.avoid_spacing),
             ("center", LVector3(0, 0, 0)),
-            ("right", perp * -DROID_AVOID_SPACING),
+            ("right", perp * -self.avoid_spacing),
         ):
             origin = pos + offset
             origin.setZ(height)
@@ -214,7 +236,7 @@ class Droid:
                 continue
 
             dist = (entry.getSurfacePoint(self.render) - pos).length()
-            if dist > DROID_AVOID_LOOKAHEAD:
+            if dist > self.avoid_lookahead:
                 continue
 
             if name == "center":
@@ -227,18 +249,18 @@ class Droid:
         steer = LVector3(0, 0, 0)
 
         if blocked["left"] and not blocked["right"]:
-            steer -= perp * DROID_AVOID_STRENGTH
+            steer -= perp * self.avoid_strength
         elif blocked["right"] and not blocked["left"]:
-            steer += perp * DROID_AVOID_STRENGTH
+            steer += perp * self.avoid_strength
         elif center_surface is not None:
             obs = center_surface - pos
             obs.setZ(0)
             if move.x * obs.y - move.y * obs.x >= 0:
-                steer -= perp * DROID_AVOID_STRENGTH
+                steer -= perp * self.avoid_strength
             else:
-                steer += perp * DROID_AVOID_STRENGTH
+                steer += perp * self.avoid_strength
         elif blocked["left"] and blocked["right"]:
-            steer -= move * DROID_AVOID_STRENGTH * 0.5
+            steer -= move * self.avoid_strength * 0.5
 
         return steer
 
@@ -250,7 +272,7 @@ class Droid:
         return None
 
     def separation(self, others):
-        """Разделение дроидов, чтобы не слипались | Separation between droids to avoid stacking"""
+        """Разделение NPC, чтобы не слипались | Separation between NPCs to avoid stacking"""
         steer = LVector3(0, 0, 0)
 
         for other in others:
@@ -258,8 +280,8 @@ class Droid:
             offset.setZ(0)
 
             dist = offset.length()
-            if 0 < dist < DROID_SEPARATION_DISTANCE:
+            if 0 < dist < self.separation_distance:
                 offset.normalize()
-                steer += offset * (1.0 - dist / DROID_SEPARATION_DISTANCE)
+                steer += offset * (1.0 - dist / self.separation_distance)
 
         return steer
