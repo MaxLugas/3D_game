@@ -6,6 +6,7 @@ from direct.showbase.ShowBaseGlobal import globalClock
 from panda3d.core import (
     Filename,
     KeyboardButton,
+    TextNode,
     get_model_path,
 )
 
@@ -87,7 +88,7 @@ class Game(WorldSetupMixin, ShowBase):
         self.setup_ground_ray()
 
     def setup_ui(self):
-        """Создаёт прицел и подсказку подбора | Create crosshair and pickup hint"""
+        """Создаёт прицел, подсказку подбора и счётчик FPS | Create crosshair, pickup hint and FPS counter"""
         self.crosshair = create_crosshair(self.aspect2d)
 
         self.pickup_hint = OnscreenText(
@@ -98,6 +99,26 @@ class Game(WorldSetupMixin, ShowBase):
             mayChange=True
         )
         self.pickup_hint.hide()
+
+        self.fps_label = OnscreenText(
+            text="",
+            pos=(1 / self.aspect2d.getSx() - 0.02, 0.95),
+            align=TextNode.ARight,
+            scale=0.05,
+            fg=(1, 1, 1, 1),
+            mayChange=True,
+        )
+        self.fps_frames = 0
+        self.fps_time = 0.0
+
+    def update_fps(self, dt):
+        """Обновляет счётчик FPS раз в полсекунды | Update FPS counter every half second"""
+        self.fps_frames += 1
+        self.fps_time += dt
+        if self.fps_time >= 0.5:
+            self.fps_label.setText(f"FPS: {round(self.fps_frames / self.fps_time)}")
+            self.fps_frames = 0
+            self.fps_time = 0.0
 
     def on_shoot(self):
         """Обработчик выстрела | Shoot handler"""
@@ -163,6 +184,8 @@ class Game(WorldSetupMixin, ShowBase):
     def update(self, task):
         """Обновление игры каждый кадр | Update game every frame"""
         dt = globalClock.getDt()
+
+        self.update_fps(dt)
 
         tab_held = self.mouseWatcherNode.isButtonDown(KeyboardButton.tab())
         self.minimap.set_visible(tab_held)
