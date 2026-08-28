@@ -1,5 +1,3 @@
-import os
-
 from math import atan2, degrees
 
 from direct.actor.Actor import Actor
@@ -8,7 +6,6 @@ from panda3d.core import CollisionTraverser, CollisionHandlerQueue
 from src.config import (
     SHOW_BOUNDS,
     OBSTACLE_MASK_BIT,
-    MODELS_DIR,
 )
 from src.core.npc_config import NPC_MODELS, npc_config
 from src.maps.model_loader import create_bounds_collider
@@ -31,7 +28,7 @@ class Droid:
         self.avoid_strength = config["avoid_strength"]
         self.anims = config.get("anims", {})
 
-        self.actor = Actor(os.path.join(MODELS_DIR, model))
+        self.actor = Actor(model)
         self.actor.reparentTo(render)
         self.actor.setScale(scale)
         self.actor.setPos(pos)

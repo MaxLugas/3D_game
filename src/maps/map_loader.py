@@ -73,4 +73,4 @@ class MapLoader:
 
     def load_model(self, name):
         """Загружает статичную модель. | Load static model."""
-        return load_model_or_actor(self.loader, os.path.join(MODELS_DIR, name))
+        return load_model_or_actor(self.loader, name)

@@ -18,6 +18,7 @@ from src.config import (
     PROJECT_ROOT,
     PLAYER_MODEL,
     PLAYER_ICON,
+    panda_path,
 )
 
 
@@ -67,7 +68,7 @@ def load_icon_textures(loader, models):
     for model in models:
         path = icon_path(model)
         if path.exists():
-            icons[model] = loader.loadTexture(str(path))
+            icons[model] = loader.loadTexture(panda_path(path))
     return icons
 
 
@@ -108,7 +109,7 @@ class Minimap:
         icons = load_icon_textures(self.loader, models)
         player_path = ICONS_DIR / PLAYER_ICON
         if player_path.exists():
-            icons[PLAYER_ICON] = self.loader.loadTexture(str(player_path))
+            icons[PLAYER_ICON] = self.loader.loadTexture(panda_path(player_path))
         return icons
 
     def create_background(self):

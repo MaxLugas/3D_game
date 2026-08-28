@@ -1,5 +1,3 @@
-import os
-
 from direct.showbase.ShowBase import ShowBase
 from direct.gui.OnscreenText import OnscreenText
 from direct.showbase.ShowBaseGlobal import globalClock
@@ -17,6 +15,7 @@ from src.config import (
     PICKUP_RAY_RANGE,
     WINDOW_WIDTH,
     WINDOW_HEIGHT,
+    PROJECT_ROOT,
 )
 from src.entities.player import Player
 from src.systems.camera import CameraController
@@ -30,7 +29,7 @@ class Game(WorldSetupMixin, ShowBase):
         """Инициализация игры: сцена, игрок, коллайдеры, карта | Initialize game: scene, player, colliders, map"""
         super().__init__()
 
-        get_model_path().prepend_directory(Filename(os.getcwd()))
+        get_model_path().prepend_directory(Filename.from_os_specific(str(PROJECT_ROOT)))
 
         self.disableMouse()
         self.setBackgroundColor(*SKY_COLOR, 1)
@@ -185,16 +184,20 @@ class Game(WorldSetupMixin, ShowBase):
         """Обновление игры каждый кадр | Update game every frame"""
         dt = globalClock.getDt()
 
+        mw = self.mouseWatcherNode
+        if mw is None:
+            return task.cont  # headless/offscreen: нет ввода | no input available
+
         self.update_fps(dt)
 
-        tab_held = self.mouseWatcherNode.isButtonDown(KeyboardButton.tab())
+        tab_held = mw.isButtonDown(KeyboardButton.tab())
         self.minimap.set_visible(tab_held)
         if tab_held:
             self.minimap.update()
 
-        self.player.shift_down = self.is_shift_down(self.mouseWatcherNode)
+        self.player.shift_down = self.is_shift_down(mw)
 
-        self.camera_controller.update(dt, self.win, self.mouseWatcherNode)
+        self.camera_controller.update(dt, self.win, mw)
 
         self.update_grounding(self.player)
 

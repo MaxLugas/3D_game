@@ -19,6 +19,7 @@ from panda3d.core import (
 
 sys.path.insert(0, str(PROJECT_ROOT))
 
+from src.config import panda_path
 from src.maps.model_loader import load_model_or_actor
 
 MODELS_DIR = PROJECT_ROOT / "assets" / "models"
@@ -48,7 +49,7 @@ class IconRenderer(ShowBase):
 
     def render_icon(self, model_path, out_path, heading=0, pitch=0):
         """Рендерит фронтальный вид модели и сохраняет PNG | Render model front view and save PNG"""
-        node = load_model_or_actor(self.loader, str(model_path))
+        node = load_model_or_actor(self.loader, panda_path(model_path))
         node.reparentTo(self.render)
         node.setH(heading)
         try:

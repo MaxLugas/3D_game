@@ -1,18 +1,16 @@
 import os
 import sys
+from pathlib import Path
 
 if __package__ in (None, ""):
-    _ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    _SRC = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    sys.path.insert(0, _ROOT)
-    sys.path.insert(0, _SRC)
-    os.chdir(_ROOT)
+    _ROOT = Path(__file__).resolve().parent.parent.parent
+    sys.path.insert(0, str(_ROOT))
 
 from direct.showbase.ShowBase import ShowBase
 from direct.showbase.ShowBaseGlobal import globalClock
 from panda3d.core import Filename, get_model_path
 
-from src.config import WINDOW_WIDTH, WINDOW_HEIGHT, SKY_COLOR, MODELS_DIR
+from src.config import WINDOW_WIDTH, WINDOW_HEIGHT, SKY_COLOR, MODELS_DIR, PROJECT_ROOT
 from src.maps.editor_config import EDITOR_CAMERA_PITCH, PICK_MASK_BIT
 from src.maps.editor_camera import EditorCameraController
 from src.maps.editor_input import EditorInputMixin
@@ -28,7 +26,7 @@ class MapCreatorApp(EditorUiMixin, EditorInputMixin, EditorModelsMixin, EditorMa
         """Инициализация редактора карт | Initialize map editor"""
         super().__init__()
 
-        get_model_path().prepend_directory(Filename(os.getcwd()))
+        get_model_path().prepend_directory(Filename.from_os_specific(str(PROJECT_ROOT)))
 
         self.disableMouse()
         self.setBackgroundColor(*SKY_COLOR, 1)

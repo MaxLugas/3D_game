@@ -1,11 +1,22 @@
 from pathlib import Path
 
+from panda3d.core import Filename, get_model_path
+
 # ================ Пути | Paths ================
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 MODELS_DIR = PROJECT_ROOT / "assets" / "models"          # Директория 3D-моделей | 3D models directory
 MAP_FILE = PROJECT_ROOT / "assets" / "map.json"          # Файл карты | Map file
 ICONS_DIR = PROJECT_ROOT / "assets" / "icons"            # Директория иконок | Icons directory
 GENERATOR_TOOL = PROJECT_ROOT / "tools" / "generate_icons.py"  # Генератор иконок | Icon generator
+
+# Регистрируем пути моделей и иконок в Panda3D (кросс-платформенно) | Register model & icon paths in Panda3D (cross-platform)
+get_model_path().prepend_directory(Filename.from_os_specific(str(MODELS_DIR)))
+get_model_path().prepend_directory(Filename.from_os_specific(str(ICONS_DIR)))
+
+
+def panda_path(path):
+    """Преобразует путь в формат Panda3D, пригодный для загрузки на любой ОС | Convert a path to a Panda3D-loadable format on any OS"""
+    return Filename.from_os_specific(str(path))
 
 # ================ Модели | Models ================
 PLAYER_MODEL = "UAL1_Standard.bam"                       # Модель игрока | Player model

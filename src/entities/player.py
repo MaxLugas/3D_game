@@ -1,5 +1,3 @@
-import os
-
 from direct.actor.Actor import Actor
 from src.config import (
     JUMP_POWER,
@@ -11,7 +9,6 @@ from src.config import (
     PLAYER_SCALE,
     PLAYER_HEADING,
     PLAYER_MODEL,
-    MODELS_DIR,
 )
 
 
@@ -37,7 +34,7 @@ class Player:
 
         self.actor = None
         if with_model:
-            self.actor = Actor(os.path.join(MODELS_DIR, PLAYER_MODEL))
+            self.actor = Actor(PLAYER_MODEL)
             self.actor.reparentTo(self.root)
             self.actor.setScale(PLAYER_SCALE)
             self.actor.setPos(0, 0, 0)

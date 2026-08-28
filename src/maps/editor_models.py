@@ -1,10 +1,8 @@
-import os
-
 from direct.actor.Actor import Actor
 from direct.showbase.ShowBaseGlobal import globalClock
 from panda3d.core import LVector3, LPoint3, BitMask32
 
-from src.config import MAP_SIZE, MODELS_DIR, PLAYER_MODEL
+from src.config import MAP_SIZE, PLAYER_MODEL
 from src.maps.editor_config import (
     GHOST_COLOR,
     GHOST_NORMAL_MODELS,
@@ -18,13 +16,9 @@ from src.maps.model_loader import load_model_or_actor, create_bounds_collider
 
 
 class EditorModelsMixin:
-    def get_model(self, name):
-        """Возвращает полный путь к модели | Return full model path"""
-        return os.path.join(MODELS_DIR, name)
-
     def load_actor_or_model(self, name):
         """Загружает модель или актёра с анимациями | Load model or animated actor"""
-        return load_model_or_actor(self.loader, self.get_model(name))
+        return load_model_or_actor(self.loader, name)
 
     def destroy_node(self, node):
         """Удаляет узел сцены | Destroy scene node"""
