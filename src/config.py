@@ -23,6 +23,11 @@ PLAYER_MODEL = "UAL1_Standard.bam"                       # Модель игро
 PICKUP_MODELS = ("statue.bam", 'chest.bam')              # Имена моделей-предметов подбора в map.json | Pickup model names in map.json
 PLAYER_ICON = "player.png"                               # Иконка игрока на миникарте | Player minimap icon
 
+# Модели, которые некорректно рендерятся под освещением сцены (чернеют/невидимы).
+# Для них при размещении/спавне отключаем свет (setLightOff). | Models that render
+# incorrectly under the scene lighting (turn black/invisible). Lighting is disabled for them.
+LIGHT_OFF_MODELS = {"droid.bam", "robot_zombie_warrior.bam"}
+
 # ================ Игровые параметры | Game Parameters ================
 MAP_SIZE = 50                                    # Размер игрового поля | Game field size
 GRAVITY = -25                                    # Гравитация | Gravity

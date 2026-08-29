@@ -8,11 +8,11 @@ from src.config import (
     OBSTACLE_MASK_BIT,
 )
 from src.core.npc_config import NPC_MODELS, npc_config
-from src.maps.model_loader import create_bounds_collider
+from src.maps.model_loader import create_bounds_collider, apply_world_render
 
 
 class Droid:
-    def __init__(self, render, pos, pusher, collision_trav, model=NPC_MODELS[0], heading=0, scale=1):
+    def __init__(self, render, pos, pusher, collision_trav, model=NPC_MODELS, heading=0, scale=1):
         """Создаёт NPC: модель, анимации, коллайдер | Create NPC: model, animations, collider"""
         self.render = render
         self.model_name = model
@@ -33,6 +33,7 @@ class Droid:
         self.actor.setScale(scale)
         self.actor.setPos(pos)
         self.actor.setH(heading)
+        apply_world_render(self.actor, model)
         if SHOW_BOUNDS:
             self.actor.showBounds()
         self.loop_anim("idle")

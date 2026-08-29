@@ -12,7 +12,7 @@ from src.maps.editor_config import (
     PLACEMENT_DISTANCE,
     PICK_MASK_BIT,
 )
-from src.maps.model_loader import load_model_or_actor, create_bounds_collider
+from src.maps.model_loader import load_model_or_actor, create_bounds_collider, apply_world_render
 
 
 class EditorModelsMixin:
@@ -144,6 +144,7 @@ class EditorModelsMixin:
         node = self.load_actor_or_model(name)
         node.reparentTo(self.render)
         node.showBounds()
+        apply_world_render(node, name)
         node.setPos(*pos)
         if scale is None:
             scale = 1

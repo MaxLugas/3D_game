@@ -26,6 +26,21 @@ NPCS = {
         "avoid_spacing": 0.9,
         "avoid_strength": 2.0,
     },
+    "robot_zombie_warrior.bam": {
+        "anims": {
+            "idle": "Alert",
+            "aggro": "Skill_01",
+            "run": "Running",
+            "attack": "Skill_03",
+        },
+        "aggro_distance": 10,
+        "attack_distance": 2,
+        "run_speed": 9,
+        "separation_distance": 1.5,
+        "avoid_lookahead": 3.0,
+        "avoid_spacing": 0.9,
+        "avoid_strength": 2.0,
+    },
 }
 
 NPC_MODELS = tuple(NPCS)

@@ -36,7 +36,7 @@ class MyApp(ShowBase):
         dlnp.setHpr(45, -60, 0)
         self.render.setLight(dlnp)
 
-        self.actor = Actor("house.bam")
+        self.actor = Actor("robot_zombie_warrior.bam")
         self.actor.setScale(0.5)
 
         bounds = self.actor.getBounds()

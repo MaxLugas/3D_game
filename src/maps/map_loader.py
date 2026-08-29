@@ -7,7 +7,7 @@ from src.config import SHOW_BOUNDS, OBSTACLE_MASK_BIT, MAP_FILE, MODELS_DIR, PIC
 from src.core.npc_config import NPCS
 from src.entities.droid import Droid
 from src.entities.pickup import PickupItem
-from src.maps.model_loader import load_model_or_actor, create_bounds_collider
+from src.maps.model_loader import load_model_or_actor, create_bounds_collider, apply_world_render
 
 
 class MapLoader:
@@ -73,4 +73,5 @@ class MapLoader:
 
     def load_model(self, name):
         """Загружает статичную модель. | Load static model."""
-        return load_model_or_actor(self.loader, name)
+        node = load_model_or_actor(self.loader, name)
+        return apply_world_render(node, name)
