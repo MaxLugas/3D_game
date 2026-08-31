@@ -139,6 +139,8 @@ class WorldSetupMixin:
 
     def setup_window(self, width, height):
         """Настраивает окно: размер и скрытый курсор | Setup window: size and hidden cursor"""
+        if self.win is None or not hasattr(self.win, "requestProperties"):
+            return  # работаем без реального окна (offscreen/headless) | running without a real window
         props = WindowProperties()
         props.setCursorHidden(True)
         props.setSize(width, height)

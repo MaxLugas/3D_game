@@ -1,5 +1,3 @@
-import os
-
 from direct.showbase.ShowBase import ShowBase
 from direct.gui.OnscreenText import OnscreenText
 from direct.showbase.ShowBaseGlobal import globalClock
@@ -17,6 +15,7 @@ from src.config import (
     PICKUP_RAY_RANGE,
     WINDOW_WIDTH,
     WINDOW_HEIGHT,
+    PROJECT_ROOT,
 )
 from src.entities.player import Player
 from src.systems.camera import CameraController
@@ -30,7 +29,7 @@ class Game(WorldSetupMixin, ShowBase):
         """Инициализация игры: сцена, игрок, коллайдеры, карта | Initialize game: scene, player, colliders, map"""
         super().__init__()
 
-        get_model_path().prepend_directory(Filename(os.getcwd()))
+        get_model_path().prepend_directory(Filename.from_os_specific(str(PROJECT_ROOT)))
 
         self.disableMouse()
         self.setBackgroundColor(*SKY_COLOR, 1)
@@ -52,7 +51,7 @@ class Game(WorldSetupMixin, ShowBase):
             self.player.root.setPos(start[0])
             self.camera_controller.yaw = start[1] + 180
 
-        self.droids = self.map_loader.droids
+        self.npc_enemies = self.map_loader.npc_enemies
         self.pickups = self.map_loader.pickups
 
         self.minimap = Minimap(
@@ -61,7 +60,7 @@ class Game(WorldSetupMixin, ShowBase):
             self.loader,
             self.player.root,
             self.map_loader.objects,
-            self.droids,
+            self.npc_enemies,
             self.pickups,
         )
 
@@ -125,8 +124,8 @@ class Game(WorldSetupMixin, ShowBase):
         self.player.shoot(on_spell_hit=self.perform_shot)
 
     def perform_shot(self):
-        """Проверка попадания заклинания в дроидов | Check spell hit against droids"""
-        alive = [d for d in self.droids if d.is_alive()]
+        """Проверка попадания заклинания в дроидов | Check spell hit against npc_enemies"""
+        alive = [d for d in self.npc_enemies if d.is_alive()]
         if not alive:
             return
 
@@ -137,9 +136,9 @@ class Game(WorldSetupMixin, ShowBase):
         hit_np = entry.getIntoNodePath()
         dist = (entry.getSurfacePoint(self.render) - self.camera.getPos(self.render)).length()
 
-        for droid in alive:
-            if hit_np == droid.collider and dist <= SPELL_RANGE:
-                droid.die()
+        for enemy in alive:
+            if hit_np == enemy.collider and dist <= SPELL_RANGE:
+                enemy.die()
                 break
 
     def pickup(self):
@@ -185,16 +184,20 @@ class Game(WorldSetupMixin, ShowBase):
         """Обновление игры каждый кадр | Update game every frame"""
         dt = globalClock.getDt()
 
+        mw = self.mouseWatcherNode
+        if mw is None:
+            return task.cont  # headless/offscreen: нет ввода | no input available
+
         self.update_fps(dt)
 
-        tab_held = self.mouseWatcherNode.isButtonDown(KeyboardButton.tab())
+        tab_held = mw.isButtonDown(KeyboardButton.tab())
         self.minimap.set_visible(tab_held)
         if tab_held:
             self.minimap.update()
 
-        self.player.shift_down = self.is_shift_down(self.mouseWatcherNode)
+        self.player.shift_down = self.is_shift_down(mw)
 
-        self.camera_controller.update(dt, self.win, self.mouseWatcherNode)
+        self.camera_controller.update(dt, self.win, mw)
 
         self.update_grounding(self.player)
 
@@ -208,10 +211,10 @@ class Game(WorldSetupMixin, ShowBase):
         self.player.clamp_position()
 
         player_pos = self.player.root.getPos(self.render)
-        alive = [d for d in self.droids if d.is_alive()]
-        for droid in alive:
-            others = [d for d in alive if d is not droid]
-            droid.update(player_pos, dt, others)
+        alive = [d for d in self.npc_enemies if d.is_alive()]
+        for enemy in alive:
+            others = [d for d in alive if d is not enemy]
+            enemy.update(player_pos, dt, others)
 
         self.collision_trav.traverse(self.render)
 

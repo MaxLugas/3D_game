@@ -1,18 +1,19 @@
 import os
 import sys
+from pathlib import Path
 
 import simplepbr
 
 from direct.showbase.ShowBase import ShowBase
 from direct.task import Task
 from direct.actor.Actor import Actor
-from panda3d.core import MouseButton, KeyboardButton, ClockObject, Vec3, AmbientLight, DirectionalLight, TextNode
+from panda3d.core import MouseButton, KeyboardButton, ClockObject, Vec3, AmbientLight, DirectionalLight, TextNode, Filename, get_model_path
 from direct.gui.OnscreenText import OnscreenText
 
-# Переходим в корень проекта, чтобы работали относительные пути к assets | Change to project root for relative asset paths
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-os.chdir(PROJECT_ROOT)
-sys.path.insert(0, PROJECT_ROOT)
+# Корень проекта для путей к assets и импортов | Project root for asset paths and imports
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(PROJECT_ROOT))
+MODELS_DIR = PROJECT_ROOT / "assets" / "models"
 
 globalClock = ClockObject.getGlobalClock()
 
@@ -21,6 +22,7 @@ class MyApp(ShowBase):
     def __init__(self):
         ShowBase.__init__(self)
         simplepbr.init()
+        get_model_path().prepend_directory(Filename.from_os_specific(str(MODELS_DIR)))
         self.disableMouse()
 
         alight = AmbientLight("ambient")
@@ -34,7 +36,7 @@ class MyApp(ShowBase):
         dlnp.setHpr(45, -60, 0)
         self.render.setLight(dlnp)
 
-        self.actor = Actor(os.path.join(PROJECT_ROOT, "assets/models/house.bam"))
+        self.actor = Actor("robot_zombie_warrior.bam")
         self.actor.setScale(0.5)
 
         bounds = self.actor.getBounds()
@@ -53,7 +55,7 @@ class MyApp(ShowBase):
         self.holdTimer = 0
         self.keyWasDown = False
 
-        font = self.loader.loadFont("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")
+        font = self.load_default_font()
 
         self.controlsText = OnscreenText(
             text="LMB: rotation  |  CMB: zoom  |  ↑/↓: next/previous anim  |  Tab: by frame  |  R: reset",
@@ -108,6 +110,22 @@ class MyApp(ShowBase):
         self.accept("tab", self.toggleFrameMode)
 
         self.taskMgr.add(self.rotateTask, "RotateTask")
+
+    def load_default_font(self):
+        """Ищет TTF-шрифт в кросс-платформенных местах, иначе движковый фолбэк | Find a TTF font across platforms, else engine fallback"""
+        candidates = [
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",   # Linux (Debian/Ubuntu)
+            "/usr/share/fonts/dejavu/DejaVuSans.ttf",           # Linux (Fedora/Arch)
+            "C:/Windows/Fonts/arial.ttf",                       # Windows
+            "C:/Windows/Fonts/segoeui.ttf",                     # Windows
+        ]
+        for path in candidates:
+            if os.path.exists(path):
+                try:
+                    return self.loader.loadFont(Filename.from_os_specific(path).c_str())
+                except Exception:
+                    continue
+        return None  # OnscreenText без font использует встроенный шрифт движка | OnscreenText without font uses the engine default
 
     def arrowUp(self):
         if not self.frameMode:
@@ -190,8 +208,10 @@ class MyApp(ShowBase):
         self.camera.lookAt(self.center)
 
     def rotateTask(self, task):
-        dt = globalClock.getDt()
         mw = self.mouseWatcherNode
+        if mw is None:
+            return Task.cont  # headless/offscreen: нет ввода | no input available
+        dt = globalClock.getDt()
 
         if mw.hasMouse():
             mx = mw.getMouseX()

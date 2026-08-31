@@ -1,5 +1,3 @@
-import os
-
 from math import atan2, degrees
 
 from direct.actor.Actor import Actor
@@ -8,14 +6,13 @@ from panda3d.core import CollisionTraverser, CollisionHandlerQueue
 from src.config import (
     SHOW_BOUNDS,
     OBSTACLE_MASK_BIT,
-    MODELS_DIR,
 )
 from src.core.npc_config import NPC_MODELS, npc_config
-from src.maps.model_loader import create_bounds_collider
+from src.maps.model_loader import create_bounds_collider, apply_world_render
 
 
-class Droid:
-    def __init__(self, render, pos, pusher, collision_trav, model=NPC_MODELS[0], heading=0, scale=1):
+class Npc_Enemy:
+    def __init__(self, render, pos, pusher, collision_trav, model=NPC_MODELS, heading=0, scale=1):
         """Создаёт NPC: модель, анимации, коллайдер | Create NPC: model, animations, collider"""
         self.render = render
         self.model_name = model
@@ -31,11 +28,12 @@ class Droid:
         self.avoid_strength = config["avoid_strength"]
         self.anims = config.get("anims", {})
 
-        self.actor = Actor(os.path.join(MODELS_DIR, model))
+        self.actor = Actor(model)
         self.actor.reparentTo(render)
         self.actor.setScale(scale)
         self.actor.setPos(pos)
         self.actor.setH(heading)
+        apply_world_render(self.actor, model)
         if SHOW_BOUNDS:
             self.actor.showBounds()
         self.loop_anim("idle")
@@ -51,7 +49,7 @@ class Droid:
 
         collider_node = create_bounds_collider(
             self.actor,
-            f"droid_{id(self)}",
+            f"enemy_{id(self)}",
             into_mask=BitMask32.bit(1),
             from_mask=BitMask32.bit(OBSTACLE_MASK_BIT),
         )

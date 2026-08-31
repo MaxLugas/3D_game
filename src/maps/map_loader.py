@@ -5,9 +5,9 @@ from panda3d.core import Point3, BitMask32
 
 from src.config import SHOW_BOUNDS, OBSTACLE_MASK_BIT, MAP_FILE, MODELS_DIR, PICKUP_MODELS, PLAYER_MODEL
 from src.core.npc_config import NPCS
-from src.entities.droid import Droid
+from src.entities.npc_enemies import Npc_Enemy
 from src.entities.pickup import PickupItem
-from src.maps.model_loader import load_model_or_actor, create_bounds_collider
+from src.maps.model_loader import load_model_or_actor, create_bounds_collider, apply_world_render
 
 
 class MapLoader:
@@ -17,7 +17,7 @@ class MapLoader:
         self.pusher = pusher
         self.collision_trav = collision_trav
         self.objects = []
-        self.droids = []
+        self.npc_enemies = []
         self.pickups = []
         self.player_start = None
 
@@ -44,8 +44,8 @@ class MapLoader:
                         self.player_start = (pos, heading)
                     continue
                 if name in NPCS:
-                    droid = Droid(self.render, pos, self.pusher, self.collision_trav, model=name, heading=heading, scale=scale)
-                    self.droids.append(droid)
+                    enemy = Npc_Enemy(self.render, pos, self.pusher, self.collision_trav, model=name, heading=heading, scale=scale)
+                    self.npc_enemies.append(enemy)
                 elif name in PICKUP_MODELS:
                     pickup = PickupItem(self.render, self.loader, name, pos, heading=heading, scale=scale)
                     self.pickups.append(pickup)
@@ -73,4 +73,5 @@ class MapLoader:
 
     def load_model(self, name):
         """Загружает статичную модель. | Load static model."""
-        return load_model_or_actor(self.loader, os.path.join(MODELS_DIR, name))
+        node = load_model_or_actor(self.loader, name)
+        return apply_world_render(node, name)

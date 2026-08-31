@@ -1,6 +1,23 @@
 from direct.actor.Actor import Actor
 from panda3d.core import CollisionNode, CollisionBox, Point3, BitMask32
 
+from src.config import LIGHT_OFF_MODELS
+
+
+def model_basename(name):
+    """Сравнивает название модели без пути и регистра | Model name without path, lowercased"""
+    return name.replace("\\", "/").rsplit("/", 1)[-1].lower()
+
+
+def apply_world_render(node, name):
+    """
+    Отключает освещение для моделей, которые некорректно отображаются под светом (см. LIGHT_OFF_MODELS)
+    Disable lighting for models that render incorrectly under lighting (see LIGHT_OFF_MODELS)
+    """
+    if model_basename(name) in LIGHT_OFF_MODELS:
+        node.setLightOff()
+    return node
+
 
 def pose_t_pose(actor, anims):
     """Ставит актёра в T-позу | Pose the actor in T-pose"""
