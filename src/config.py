@@ -24,7 +24,6 @@ PICKUP_MODELS = ("statue.bam", 'chest.bam')              # Имена модел
 PLAYER_ICON = "player.png"                               # Иконка игрока на миникарте | Player minimap icon
 
 # Модели, которые некорректно рендерятся под освещением сцены (чернеют/невидимы).
-# Для них при размещении/спавне отключаем свет (setLightOff). | Models that render
 # incorrectly under the scene lighting (turn black/invisible). Lighting is disabled for them.
 LIGHT_OFF_MODELS = {"droid.bam", "robot_zombie_warrior.bam"}
 

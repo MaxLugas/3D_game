@@ -10,7 +10,7 @@ from panda3d.core import Filename
 
 def main():
     if len(sys.argv) < 2:
-        print("Использование: python convert_glb.py <файл.glb> [<файл.bam>]")
+        print("Использование: ./venv/bin/python tools/convert_glb.py tools/models_glb/{name}.glb")
         sys.exit(1)
 
     src = Path(sys.argv[1])

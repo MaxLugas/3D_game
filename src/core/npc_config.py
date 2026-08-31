@@ -11,7 +11,7 @@ NPC_DEFAULTS = {
 }
 
 NPCS = {
-    "Droid.bam" : {
+    "droid.bam" : {
         "anims": {
             "idle": "Idle",
             "aggro": "Berserker_Call",

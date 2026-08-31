@@ -26,11 +26,11 @@ def icon_path(model):
     return ICONS_DIR / f"{Path(model).stem}.png"
 
 
-def needed_models(objects, droids, pickups):
+def needed_models(objects, npc_enemies, pickups):
     """Модели, для которых нужны иконки | Models that need icons"""
     models = {name for name, _ in objects}
-    for droid in droids:
-        models.add(droid.model_name)
+    for enemy in npc_enemies:
+        models.add(enemy.model_name)
     for pickup in pickups:
         models.add(pickup.model_name)
     return models
@@ -73,14 +73,14 @@ def load_icon_textures(loader, models):
 
 
 class Minimap:
-    def __init__(self, render, aspect2d, loader, player_root, objects, droids, pickups):
+    def __init__(self, render, aspect2d, loader, player_root, objects, npc_enemies, pickups):
         """
         render: корневой узел сцены | scene root node
         aspect2d: UI-узел для HUD-элементов | UI node for HUD elements
         loader: загрузчик текстур | texture loader
         player_root: корневой узел игрока | player root node
         objects: статичные объекты (name, node) | static objects (name, node)
-        droids: список дроидов | list of droids
+        npc_enemies: список дроидов | list of npc_enemies
         pickups: список предметов подбора | list of pickups
         """
         self.render = render
@@ -88,7 +88,7 @@ class Minimap:
         self.loader = loader
         self.player_root = player_root
         self.objects = objects
-        self.droids = droids
+        self.npc_enemies = npc_enemies
         self.pickups = pickups
         self.minimap_size = MINIMAP_SIZE
 
@@ -103,7 +103,7 @@ class Minimap:
 
     def load_icons(self):
         """Генерирует недостающие и загружает иконки из моделей | Generate missing and load model icons"""
-        models = needed_models(self.objects, self.droids, self.pickups)
+        models = needed_models(self.objects, self.npc_enemies, self.pickups)
         ensure_model_icons(models)
         ensure_player_icon()
         icons = load_icon_textures(self.loader, models)
@@ -165,13 +165,13 @@ class Minimap:
             )
             self.markers.append((node, marker))
 
-        for droid in self.droids:
-            droid_icon = self.model_icons.get(droid.model_name)
+        for enemy in self.npc_enemies:
+            enemy_icon = self.model_icons.get(enemy.model_name)
             marker = self.create_marker(
-                f"npc_{id(droid)}", MINIMAP_NPC_MARKER_SCALE,
-                texture=droid_icon, color=(1, 0, 0, 1) if droid_icon is None else None,
+                f"npc_{id(enemy)}", MINIMAP_NPC_MARKER_SCALE,
+                texture=enemy_icon, color=(1, 0, 0, 1) if enemy_icon is None else None,
             )
-            self.markers.append((droid, marker))
+            self.markers.append((enemy, marker))
 
         for pickup in self.pickups:
             pickup_icon = self.model_icons.get(pickup.model_name)

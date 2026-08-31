@@ -11,7 +11,7 @@ from src.core.npc_config import NPC_MODELS, npc_config
 from src.maps.model_loader import create_bounds_collider, apply_world_render
 
 
-class Droid:
+class Npc_Enemy:
     def __init__(self, render, pos, pusher, collision_trav, model=NPC_MODELS, heading=0, scale=1):
         """Создаёт NPC: модель, анимации, коллайдер | Create NPC: model, animations, collider"""
         self.render = render
@@ -49,7 +49,7 @@ class Droid:
 
         collider_node = create_bounds_collider(
             self.actor,
-            f"droid_{id(self)}",
+            f"enemy_{id(self)}",
             into_mask=BitMask32.bit(1),
             from_mask=BitMask32.bit(OBSTACLE_MASK_BIT),
         )

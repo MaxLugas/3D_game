@@ -51,7 +51,7 @@ class Game(WorldSetupMixin, ShowBase):
             self.player.root.setPos(start[0])
             self.camera_controller.yaw = start[1] + 180
 
-        self.droids = self.map_loader.droids
+        self.npc_enemies = self.map_loader.npc_enemies
         self.pickups = self.map_loader.pickups
 
         self.minimap = Minimap(
@@ -60,7 +60,7 @@ class Game(WorldSetupMixin, ShowBase):
             self.loader,
             self.player.root,
             self.map_loader.objects,
-            self.droids,
+            self.npc_enemies,
             self.pickups,
         )
 
@@ -124,8 +124,8 @@ class Game(WorldSetupMixin, ShowBase):
         self.player.shoot(on_spell_hit=self.perform_shot)
 
     def perform_shot(self):
-        """Проверка попадания заклинания в дроидов | Check spell hit against droids"""
-        alive = [d for d in self.droids if d.is_alive()]
+        """Проверка попадания заклинания в дроидов | Check spell hit against npc_enemies"""
+        alive = [d for d in self.npc_enemies if d.is_alive()]
         if not alive:
             return
 
@@ -136,9 +136,9 @@ class Game(WorldSetupMixin, ShowBase):
         hit_np = entry.getIntoNodePath()
         dist = (entry.getSurfacePoint(self.render) - self.camera.getPos(self.render)).length()
 
-        for droid in alive:
-            if hit_np == droid.collider and dist <= SPELL_RANGE:
-                droid.die()
+        for enemy in alive:
+            if hit_np == enemy.collider and dist <= SPELL_RANGE:
+                enemy.die()
                 break
 
     def pickup(self):
@@ -211,10 +211,10 @@ class Game(WorldSetupMixin, ShowBase):
         self.player.clamp_position()
 
         player_pos = self.player.root.getPos(self.render)
-        alive = [d for d in self.droids if d.is_alive()]
-        for droid in alive:
-            others = [d for d in alive if d is not droid]
-            droid.update(player_pos, dt, others)
+        alive = [d for d in self.npc_enemies if d.is_alive()]
+        for enemy in alive:
+            others = [d for d in alive if d is not enemy]
+            enemy.update(player_pos, dt, others)
 
         self.collision_trav.traverse(self.render)
 
