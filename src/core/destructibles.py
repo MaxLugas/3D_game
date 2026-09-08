@@ -1,3 +1,0 @@
-DESTRUCTIBLE_OBJECTS = {
-    'target'
-}

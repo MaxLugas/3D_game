@@ -1,11 +1,7 @@
-# 🎮 Comic-Style Game
+# 🎮 Panda3D Game
 
-![Ursina Engine](https://img.shields.io/badge/Ursina-Python%20Game%20Engine-ff6b6b?logo=python&logoColor=white)
-![Style](https://img.shields.io/badge/Art%20Style-Comic%20Book%20Cel--Shading-4ecdc4)
-![License](https://img.shields.io/badge/License-MIT-blue)
-
-**Комиксная игра с анимированным оружием и разрушаемыми объектами**  
-*A comic-book styled game with animated weapons and destructible objects*
+**Комиксная игра на Panda3D с анимированными персонажами и встроенным редактором карт**  
+*A comic-book styled game built on Panda3D with animated characters and a built-in map editor*
 
 ---
 
@@ -13,68 +9,74 @@
 
 | Русский | English |
 |---------|---------|
-| **Python**: 3.11 | **Python**: 3.11 
-| **Движок**: [Ursina Engine](https://www.ursinaengine.org/) (Python + Panda3D) | **Engine**: [Ursina Engine](https://www.ursinaengine.org/) (Python + Panda3D) |
-| **Графика**: Кастомный GLSL-шейдер для стиля комикса | **Graphics**: Custom GLSL shader for comic-book visual style |
-| **Анимации**: Panda3D Actor system (FBX/GLB) | **Animation**: Panda3D Actor system (FBX/GLB) |
-| **Аудио**: Встроенный аудио-менеджер Ursina | **Audio**: Built-in Ursina audio manager |
-| **Карта**: JSON с нормализованными координатами (-1..1) | **Map format**: JSON with normalized coordinates (-1..1) |
-| **Коллайдеры**: Автоматическая настройка под каждый тип объекта | **Colliders**: Auto-configured per object type |
-| **Стилизация**: Чёрные контуры через рендеринг обратных граней | **Styling**: Black outlines via backface rendering |
-
+| **Python**: 3.12 | **Python**: 3.12 |
+| **Движок**: [Panda3D](https://www.panda3d.org/) 1.10.16 | **Engine**: [Panda3D](https://www.panda3d.org/) 1.10.16 |
+| **Рендеринг**: panda3d-simplepbr (PBR) | **Rendering**: panda3d-simplepbr (PBR) |
+| **Конвертация**: panda3d-gltf (GLB → BAM) | **Conversion**: panda3d-gltf (GLB → BAM) |
+| **Анимации**: Panda3D Actor system (BAM) | **Animation**: Panda3D Actor system (BAM) |
+| **Карта**: JSON с группировкой объектов по моделям | **Map**: JSON with objects grouped by model |
+| **Коллайдеры**: Автоматически по `getTightBounds` | **Colliders**: Auto-generated from `getTightBounds` |
 
 ## 🌟 Особенности / Features
 
-| Русский                                                       | English                                      |
-|---------------------------------------------------------------|----------------------------------------------|
-| ✨ Стиль комикса с кастомным шейдером                          | ✨ Comic-book visual style with custom shader |
-| 🔫 Анимация оружия                                            | 🔫 Frame-accurate weapon animations          |
-| 🦘 Двойной прыжок для динамичного геймплея                    | 🦘 Double jump for dynamic movement          |
-| 💥 Разрушаемые объекты при попадании                          | 💥 Destructible targets on bullet impact     |
-| 🗺️ Мини-карта с маркерами                                    | 🗺️ Minimap with object markers              |
-| 🗿 Сбор коллекционных предметов                               | 🗿 Collectible items                         |
-| 👥 Анимированные NPC с перемещением между точками             | 👥 Animated NPCs with patrol movement        |
-| 🎨 Автоматическая настройка коллайдеров под каждый тип объекта | 🎨 Auto-configured colliders per object type |
+| Русский                                                          | English                                               |
+|------------------------------------------------------------------|-------------------------------------------------------|
+| 🎮 Игрок: WASD, бег, прыжки, заклинания, подбор предметов        | 🎮 Player: WASD, sprint, jumping, spells, item pickup |
+| 👾 NPC-враги: патрулирование, агрессия, уклонение от препятствий | 👾 NPCs Enemy: patrol, aggro, obstacle avoidance      |
+| 🗿 Статуи-предметы: подбор по расстоянию или лучу                | 🗿 Statue pickups: collect by distance or ray         |
+| 🗺️ Встроенный редактор карт с сохранением в `assets/map.json`   | 🗺️ Built-in map editor saving to `assets/map.json`   |
+| 🎨 Автоколлайдеры: подбор размеров по границам модели            | 🎨 Auto-colliders: sized from model bounds            |
+| 🐾 Separation — NPC не слипаются друг с другом                   | 🐾 Separation — NPCs avoid overlapping each other     |
 
+## ⚙️ Конфигурация / Configuration
 
-## ⚙️ Централизованная конфигурация / Centralized Configuration
+Настройки разнесены по категориям в отдельные файлы | Settings are split into categorized files:
 
-| Русский | English |
-|---------|---------|
-| **Все настройки игры находятся в одном файле** `src/core/config.py` | **All game settings centralized in a single file** `src/core/config.py` |
-| Изменяйте параметры без правки основного кода | Tweak gameplay without touching core logic |
-| Поддержка быстрой балансировки и прототипирования | Fast balancing and prototyping support |
-| Группировка по категориям: пути, геймплей, оружие, NPC, визуал | Categorized sections: paths, gameplay, weapons, NPCs, visuals |
+| Файл / File | Содержимое / Contents                         |
+|-------------|-----------------------------------------------|
+| `src/config.py` | Игра, камера, игрок, физика, визуал           | Game, camera, player, physics, visuals |
+| `src/core/npc_config.py` | Параметры NPC | Droid params |
+| `src/core/objects_config.py` | Модели объектов мира                          | World object models |
+| `src/maps/editor_config.py` | Настройки редактора карт                      | Map editor settings |
 
 **Примеры настроек / Configuration examples:**
 ```python
-# Геймплей | Gameplay
-PLAYER_SPEED = 8
-PLAYER_JUMP_HEIGHT = 2.0
-PLAYER_SECOND_JUMP_HEIGHT = 3.0
-GROUND_SCALE = 100
+# src/config.py
+MOVE_SPEED = 10            # Скорость игрока | Player speed
+GRAVITY = -25              # Гравитация | Gravity
+CAMERA_DISTANCE = 8.5      # Дистанция камеры | Camera distance
+SHOW_BOUNDS = True         # Отладочные границы | Debug bounds
 
-# Оружие | Weapon
-GLOCK_MAGAZINE_SIZE = 5
-FIRE_ANIM_START_FRAME = 86
-FIRE_ANIM_END_FRAME = 105
-RELOAD_ANIM_START_FRAME = 106
-
-# NPC
-NPC_SPEED_WALK = 3.0
-NPC_IDLE_DISTANCE = 15
-
-# Визуал | Visual
-MINIMAP_SIZE = 0.3
-MINIMAP_VISIBILITY = 0.85
-SPECULAR_FACTOR = 0.0
+# src/core/npc_config.py
+DROID_AGGRO_DISTANCE = 8   # Дистанция агрессии | Aggro distance
+DROID_RUN_SPEED = 6        # Скорость бега | Run speed
 ```
+
+## 🗺️ Формат карты / Map Format
+
+`assets/map.json` хранит объекты, сгруппированные по именам моделей | stores objects grouped by model name:
+
+```json
+{
+  "objects": {
+    "statue.bam": [
+      { "pos": [1.56, 10.07, 1.0], "heading": 357, "pitch": 0, "scale": 1 }
+    ],
+    "house.bam": [
+      { "pos": [16.14, 6.42, 1.0], "heading": 0, "pitch": 0, "scale": 1 }
+    ]
+  }
+}
+```
+
+Модели автоматически распознаются по имени: `Droid.bam` → враг-дроид, `statue.bam` → предмет подбора, остальные → статичные объекты.
+Models are auto-detected by name: `Droid.bam` → enemy droid, `statue.bam` → pickup, others → static objects.
 
 ## 🚀 Установка и запуск / Setup & Run
 
 ### Требования / Requirements
-- Python 3.8+
-- Ursina Engine 4.0+
+- Python 3.12
+- Panda3D 1.10.16
 
 ### Инструкция / Instructions
 
@@ -93,39 +95,49 @@ Linux:        . venv/bin/activate
 # 4. Установить зависимости | Install dependencies
 pip install -r requirements.txt
 
-# 5. Запустить программу | Launch programm
+# 5. Запустить игру | Launch the game
 python src/main.py
+
+# 6. Открыть редактор карт | Open the map editor
+python src/maps/map_creator.py
 ```
+
+## 🔧 Инструменты / Tools
+
+| Скрипт / Script | Назначение / Purpose |
+|-----------------|----------------------|
+| `tools/convert_glb.py` | Конвертация GLB в BAM | Convert GLB to BAM (`python tools/convert_glb.py model.glb`) |
+| `tools/test_anim.py` | Просмотр анимаций моделей | Model animation viewer (LMB: rotate, ↑/↓: next/prev anim, Tab: frame mode) |
 
 ## 📂 Структура проекта / Project Structure
 ```
 project/
+├── assets/
+│   ├── models/               # 3D-модели | 3D models
+│   ├── icons/                # Иконки для редактора | Editor icons
+│   ├── audio/                # Звуковые эффекты | Sound effects
+│   └── map.json              # Карта объектов | Object map
 ├── src/
-│   ├── assets/               # Игровые ресурсы | Game assets
-│   │   ├── models/           # 3D-модели (.glb) | 3D models (.glb)
-│   │   ├── textures/         # Текстуры и иконки | Textures and icons
-│   │   ├── audio/            # Звуковые эффекты | Sound effects
-│   │   └── map.json          # Карта с нормализованными координатами объектов (-1..1) | Map with normalized object coordinates (-1..1) 
-│   ├── core/                 # Ядро движка | Engine core
-│   │   ├── config.py         # Все настройки в одном файле | Centralized configuration
-│   │   ├── engine.py         # Инициализация сцены | Scene initialization
-│   │   ├── destructibles.py  # Список разрушаемых объектов | Destructible objects list
-│   │   └── comics_shader.py  # Кастомный шейдер | Custom shader
-│   ├── entities/             # Игровые сущности | Game entities
-│   │   ├── player.py         # Игрок с двойным прыжком | Double-jump player
-│   │   ├── weapon.py         # FPS-оружие с анимациями | FPS weapon with animations
-│   │   └── npc.py            # Анимированные NPC | Animated NPCs
-│   ├── systems/              # Игровые системы | Game systems
-│   │   ├── game_logic.py     # Границы, падение, взаимодействия | Boundaries, fall reset, interactions
+│   ├── main.py               # Точка входа в игру | Game entry point
+│   ├── config.py             # Настройки игры | Game configuration
+│   ├── core/
+│   │   ├── app.py            # Инициализация игры и сцены | Game and scene setup
+│   │   ├── npc_config.py     # Настройки дроидов | Droid configuration
+│   │   └── objects_config.py # Настройки объектов мира | World objects configuration
+│   ├── entities/
+│   │   ├── player.py         # Игрок | Player
+│   │   ├── droid.py          # Дроиды-враги | Enemy droids
+│   │   └── pickup.py         # Предметы подбора | Pickups
+│   ├── maps/
 │   │   ├── map_loader.py     # Загрузка карты из JSON | JSON map loader
-│   │   └──  minimap.py        # Система мини-карты | Minimap system  
-│   └── utils/                # Вспомогательные утилиты | Utilities
-│       └── object_setup.py   # Настройка коллайдеров | Collider setup
-├── tests/                    # Тесты отдельных систем | System tests
-├── features/                 # Прототипы механик | Feature prototypes
-├── docs/                     # Документация проекта | Project documentation
-├── tools/                    # Вспомогательные утилиты для разработки | Development utilities
-└── main.py                   # Точка входа | Entry point
+│   │   ├── map_creator.py    # Редактор карт | Map editor
+│   │   ├── editor_*.py       # Модули редактора | Editor modules
+│   │   └── model_loader.py   # Загрузка моделей по имени | Model loading by name
+│   └── systems/
+│       ├── world_setup.py    # Создание мира (земля, свет, коллайдеры) | World setup (ground, lights, colliders)
+│       └── camera.py         # Камера игрока | Player camera
+├── tools/                    # Утилиты разработчика | Developer utilities
+└── requirements.txt          # Зависимости | Dependencies
 ```
 
 ---
@@ -133,20 +145,12 @@ project/
 ## 📜 Лицензия / License
 
 Этот проект распространяется под лицензией **MIT**.
-
-📄 Полный текст лицензии: [LICENSE](LICENSE)
-
 This project is licensed under the **MIT License**.
-
-📄 Full license text: [LICENSE](LICENSE)
 
 ---
 
 ## 📬 Контакты / Contact
 
-
 📧 **Email**: [maxim.lugovsky@gmail.com](mailto:maxim.lugovsky@gmail.com)  
 💬 **Telegram**: [@mxm_lugas](https://t.me/mxm_lugas)  
 📱 **WhatsApp**: [+972 55-257-5915](https://wa.me/972552575915)
-
-

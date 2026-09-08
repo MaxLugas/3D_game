@@ -6,12 +6,6 @@ __pycache__/
 *.log
 .DS_Store
 .idea/
-all_code.txt
-collect_pycode.py
-/src/assets/future_models/
-/src/assets/future_textures/
-/tests/
-/features/
-/tools/models_bam/
 /tools/models_glb/
 /docs/
+*.json

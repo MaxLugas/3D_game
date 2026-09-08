@@ -1,183 +1,260 @@
-from ursina import *
-from src.core.config import MAP_HALF_SIZE, MINIMAP_SIZE, MINIMAP_PLAYER_MARKER_SCALE, MINIMAP_VISIBILITY, ICONS_DIR, RENDER_DISTANCE
+from pathlib import Path
+import math
+import subprocess
+import sys
+
+from panda3d.core import CardMaker, TransparencyAttrib, LVector2
+
+from src.config import (
+    MINIMAP_SIZE,
+    MINIMAP_MARGIN,
+    MINIMAP_VIEW_RADIUS,
+    MINIMAP_BG_ALPHA,
+    MINIMAP_PLAYER_MARKER_SCALE,
+    MINIMAP_NPC_MARKER_SCALE,
+    MINIMAP_OBJECT_MARKER_SCALE,
+    ICONS_DIR,
+    GENERATOR_TOOL,
+    PROJECT_ROOT,
+    PLAYER_MODEL,
+    PLAYER_ICON,
+    panda_path,
+)
+
+
+def icon_path(model):
+    return ICONS_DIR / f"{Path(model).stem}.png"
+
+
+def needed_models(objects, npc_enemies, pickups):
+    """Модели, для которых нужны иконки | Models that need icons"""
+    models = {name for name, _ in objects}
+    for enemy in npc_enemies:
+        models.add(enemy.model_name)
+    for pickup in pickups:
+        models.add(pickup.model_name)
+    return models
+
+
+def run_icon_generator(models, name=None):
+    """Запускает генератор иконок | Run the icon generator"""
+    args = [sys.executable, str(GENERATOR_TOOL), "--out", str(ICONS_DIR),
+            "--models", *(Path(m).stem for m in models)]
+    if name:
+        args += ["--name", name]
+    try:
+        subprocess.run(args, cwd=str(PROJECT_ROOT), check=False, timeout=180)
+    except Exception:
+        pass
+
+
+def ensure_model_icons(models):
+    """Генерирует недостающие иконки моделей | Generate missing model icons"""
+    missing = sorted(m for m in models if not icon_path(m).exists())
+    if missing:
+        run_icon_generator(missing)
+
+
+def ensure_player_icon():
+    """Генерирует player.png из модели игрока, если её нет | Generate player.png from player model if missing"""
+    if (ICONS_DIR / PLAYER_ICON).exists():
+        return
+    run_icon_generator([PLAYER_MODEL], name=Path(PLAYER_ICON).stem)
+
+
+def load_icon_textures(loader, models):
+    """Загружает текстуры иконок моделей | Load model icon textures"""
+    icons = {}
+    for model in models:
+        path = icon_path(model)
+        if path.exists():
+            icons[model] = loader.loadTexture(panda_path(path))
+    return icons
 
 
 class Minimap:
-    def __init__(self, player, world_entities, npcs, map_half_size=MAP_HALF_SIZE, minimap_size=MINIMAP_SIZE):
-        self.player = player
-        self.world_entities = world_entities
-        self.npcs = npcs
-        self.map_half_size = map_half_size
-        self.minimap_size = minimap_size
+    def __init__(self, render, aspect2d, loader, player_root, objects, npc_enemies, pickups):
+        """
+        render: корневой узел сцены | scene root node
+        aspect2d: UI-узел для HUD-элементов | UI node for HUD elements
+        loader: загрузчик текстур | texture loader
+        player_root: корневой узел игрока | player root node
+        objects: статичные объекты (name, node) | static objects (name, node)
+        npc_enemies: список дроидов | list of npc_enemies
+        pickups: список предметов подбора | list of pickups
+        """
+        self.render = render
+        self.aspect2d = aspect2d
+        self.loader = loader
+        self.player_root = player_root
+        self.objects = objects
+        self.npc_enemies = npc_enemies
+        self.pickups = pickups
+        self.minimap_size = MINIMAP_SIZE
 
-        self.bg = Entity(
-            parent=camera.ui,
-            model='quad',
-            scale=(minimap_size, minimap_size),
-            position=(0, 0),
-            color=color.rgba(0, 0, 0, MINIMAP_VISIBILITY)
-        )
+        self.model_icons = self.load_icons()
 
-        self.player_marker = None
+        self.root = aspect2d.attachNewNode("minimap")
+        self.background = self.create_background()
         self.markers = []
 
-        self.icon_textures = {}
-        self._load_icons()
-
-        self._create_markers()
+        self.create_markers()
         self.set_visible(False)
 
-    def _load_icons(self):
-        icon_types = ['tree', 'stone', 'cottage', 'statue', 'flashlight',
-                      'target', 'fence', 'npc', 'player_start']
-        for name in icon_types:
-            path = ICONS_DIR / f'{name}.png'
-            if path.exists():
-                self.icon_textures[name] = Texture(str(path))
+    def load_icons(self):
+        """Генерирует недостающие и загружает иконки из моделей | Generate missing and load model icons"""
+        models = needed_models(self.objects, self.npc_enemies, self.pickups)
+        ensure_model_icons(models)
+        ensure_player_icon()
+        icons = load_icon_textures(self.loader, models)
+        player_path = ICONS_DIR / PLAYER_ICON
+        if player_path.exists():
+            icons[PLAYER_ICON] = self.loader.loadTexture(panda_path(player_path))
+        return icons
 
-    def _world_to_minimap(self, world_pos):
-        """Преобразует мировые координаты в позицию на мини-карте. | Convert world coordinates to minimap position."""
-        nx = world_pos[0] / self.map_half_size  # Нормализация по X | Normalize X
-        nz = world_pos[2] / self.map_half_size  # Нормализация по Z | Normalize Z
-        offset = self.minimap_size / 2
-        return Vec2(
-            self.bg.position.x + nx * offset,
-            self.bg.position.y + nz * offset
+    def create_background(self):
+        card_maker = CardMaker("minimap_bg")
+        card_maker.setFrame(-0.5, 0.5, -0.5, 0.5)
+        background = self.root.attachNewNode(card_maker.generate())
+        background.setScale(self.minimap_size)
+        background.setColor(0, 0, 0, MINIMAP_BG_ALPHA)
+        background.setTransparency(TransparencyAttrib.MAlpha)
+        background.setBin("fixed", 100)
+        background.setDepthTest(False)
+        background.setDepthWrite(False)
+        self.background = background
+        self.update_background_position()
+        return background
+
+    def update_background_position(self):
+        """Позиционирует фон относительно текущего аспекта окна | Position background relative to current window aspect"""
+        scale_x = self.aspect2d.getSx()
+        self.background.setPos(
+            -1 / scale_x + MINIMAP_MARGIN + self.minimap_size / 2, 0,
+            1 - MINIMAP_MARGIN - self.minimap_size / 2,
         )
 
-    def set_visible(self, visible: bool):
-        """Переключение видимости мини-карты. | Toggle minimap visibility."""
-        self.bg.enabled = visible
-        self.player_marker.enabled = visible
-        for _, marker in self.markers:
-            marker.enabled = visible
-
-    def _get_object_type(self, ent):
-        obj_type = getattr(ent, 'obj_type', None)
-        if obj_type in ('tree', 'stone', 'cottage', 'statue', 'flashlight', 'target', 'fence'):
-            return obj_type
-        return None
-
-    def _make_marker_for_entity(self, ent):
-        if getattr(ent, 'is_ground_tile', False):
-            return None
-        if not hasattr(ent, 'bounds'):
-            return None
-        obj_type = self._get_object_type(ent)
-        icon = self.icon_textures.get(obj_type) if obj_type else None
-        marker = Entity(
-            parent=camera.ui, model='quad', scale=0.02,
-            always_on_top=True
-        )
-        if icon:
-            marker.texture = icon
-        else:
-            marker.color = color.white
+    def create_marker(self, name, scale, texture=None, color=None):
+        card_maker = CardMaker(name)
+        card_maker.setFrame(-0.5, 0.5, -0.5, 0.5)
+        marker = self.root.attachNewNode(card_maker.generate())
+        marker.setScale(scale)
+        if texture is not None:
+            marker.setTexture(texture)
+        if color is not None:
+            marker.setColor(*color)
+        marker.setTransparency(TransparencyAttrib.MAlpha)
+        marker.setBin("fixed", 100)
+        marker.setDepthTest(False)
+        marker.setDepthWrite(False)
         return marker
 
-    def _make_marker_for_npc(self, npc):
-        npc_icon = self.icon_textures.get('npc')
-        marker = Entity(
-            parent=camera.ui, model='quad', scale=0.025,
-            always_on_top=True
+    def create_markers(self):
+        player_icon = self.model_icons.get(PLAYER_ICON)
+        self.player_marker = self.create_marker(
+            "player_marker", MINIMAP_PLAYER_MARKER_SCALE,
+            texture=player_icon, color=(0, 1, 0, 1) if player_icon is None else None,
         )
-        if npc_icon:
-            marker.texture = npc_icon
-        else:
-            marker.color = color.red
-        return marker
+        self.markers.append((self.player_root, self.player_marker))
 
-    def _create_markers(self):
-        scale_player = MINIMAP_PLAYER_MARKER_SCALE
-        player_icon = self.icon_textures.get('player_start')
-        if player_icon:
-            self.player_marker = Entity(
-                parent=camera.ui, model='quad', texture=player_icon,
-                scale=scale_player, always_on_top=True
+        for name, node in self.objects:
+            icon = self.model_icons.get(name)
+            marker = self.create_marker(
+                f"obj_{id(node)}", MINIMAP_OBJECT_MARKER_SCALE,
+                texture=icon,
             )
-        else:
-            self.player_marker = Entity(
-                parent=camera.ui, model='circle',
-                color=color.green, scale=scale_player, always_on_top=True
+            self.markers.append((node, marker))
+
+        for enemy in self.npc_enemies:
+            enemy_icon = self.model_icons.get(enemy.model_name)
+            marker = self.create_marker(
+                f"npc_{id(enemy)}", MINIMAP_NPC_MARKER_SCALE,
+                texture=enemy_icon, color=(1, 0, 0, 1) if enemy_icon is None else None,
             )
+            self.markers.append((enemy, marker))
 
-        for ent in self.world_entities:
-            marker = self._make_marker_for_entity(ent)
-            if marker:
-                self.markers.append((ent, marker))
+        for pickup in self.pickups:
+            pickup_icon = self.model_icons.get(pickup.model_name)
+            marker = self.create_marker(
+                f"pickup_{id(pickup)}", MINIMAP_OBJECT_MARKER_SCALE,
+                texture=pickup_icon, color=(1, 1, 0, 1) if pickup_icon is None else None,
+            )
+            self.markers.append((pickup, marker))
 
-        for npc in self.npcs:
-            marker = self._make_marker_for_npc(npc)
-            if marker:
-                self.markers.append((npc, marker))
+    def get_source_position(self, source):
+        if hasattr(source, "get_position"):
+            return source.get_position()
+        if hasattr(source, "actor"):
+            return source.actor.getPos(self.render)
+        return source.getPos(self.render)
 
-    def _sync_markers(self):
-        """Добавляет маркеры для новых объектов (из загруженных чанков). | Add markers for new entities (from loaded chunks)."""
-        marked_ids = {id(s) for s, _ in self.markers}
+    def is_source_dead(self, source):
+        if hasattr(source, "is_alive"):
+            return not source.is_alive()
+        if hasattr(source, "is_available"):
+            return not source.is_available()
+        return source.isEmpty()
 
-        for ent in self.world_entities:
-            if id(ent) in marked_ids:
-                continue
-            marker = self._make_marker_for_entity(ent)
-            if marker:
-                self.markers.append((ent, marker))
-                marked_ids.add(id(ent))
+    def world_to_minimap(self, pos, player_pos):
+        """Преобразует мировые координаты в позицию на миникарте относительно игрока | Convert world coords to minimap position relative to player"""
+        rel_x = (pos.x - player_pos.x) / MINIMAP_VIEW_RADIUS
+        rel_y = (pos.y - player_pos.y) / MINIMAP_VIEW_RADIUS
+        half_size = self.minimap_size / 2
+        return LVector2(
+            self.background.getX() + rel_x * half_size,
+            self.background.getZ() + rel_y * half_size,
+        )
 
-        for npc in self.npcs:
-            if id(npc) in marked_ids:
-                continue
-            marker = self._make_marker_for_npc(npc)
-            if marker:
-                self.markers.append((npc, marker))
+    def clamp_to_background(self, marker_pos):
+        """Не даёт маркерам выходить за границы фона | Keep markers inside the background bounds"""
+        half = self.minimap_size / 2
+        return LVector2(
+            max(self.background.getX() - half, min(self.background.getX() + half, marker_pos.x)),
+            max(self.background.getZ() - half, min(self.background.getZ() + half, marker_pos.y)),
+        )
+
+    def set_visible(self, visible):
+        if visible:
+            self.root.show()
+        else:
+            self.root.hide()
 
     def update(self):
-        """Обновление позиций всех маркеров каждый кадр. | Update all marker positions each frame."""
-        # Позиция и поворот игрока | Player position and rotation
-        p_pos = self._world_to_minimap(self.player.position)
-        self.player_marker.position = p_pos
-        self.player_marker.rotation = (0, 0, self.player.rotation_y)
+        if self.root.isHidden():
+            return
 
-        # Добавление маркеров для новых объектов из подгруженных чанков | Add markers for new chunk entities
-        self._sync_markers()
+        self.update_background_position()
 
-        # Обновление остальных маркеров с очисткой удалённых объектов | Update other markers with cleanup
+        player_pos = self.player_root.getPos(self.render)
+
+        # Игрок всегда в центре миникарты | Player is always at the center of the minimap
+        self.player_marker.setPos(self.background.getX(), 0, self.background.getZ())
+
         valid_markers = []
         for source, marker in self.markers:
-            # Пропуск удалённых Entity | Skip destroyed entities
-            if isinstance(source, Entity) and source.is_empty():
-                destroy(marker)
+            if source is self.player_root:
+                valid_markers.append((source, marker))
                 continue
-            # Пропуск уничтоженных NPC | Skip destroyed NPCs
-            if hasattr(source, '_destroyed') and source._destroyed:
-                destroy(marker)
+
+            if self.is_source_dead(source):
+                marker.removeNode()
                 continue
 
             try:
-                # Получение позиции | Get position
-                if hasattr(source, 'position'):
-                    pos = source.position
-                elif hasattr(source, 'get_position'):  # Для NPC | For NPC
-                    pos = source.get_position()
-                else:
-                    destroy(marker)
-                    continue
+                marker_pos = self.world_to_minimap(self.get_source_position(source), player_pos)
+                marker_pos = self.clamp_to_background(marker_pos)
             except Exception:
-                destroy(marker)
+                marker.removeNode()
                 continue
 
-            m_pos = self._world_to_minimap(pos)
-            marker.position = m_pos
-
-            # Скрыть маркеры за дистанцией рендеринга | Hide markers beyond render distance
-            dist = distance(self.player.position, pos)
-            marker.enabled = dist <= RENDER_DISTANCE
+            marker.setPos(marker_pos.x, 0, marker_pos.y)
             valid_markers.append((source, marker))
 
         self.markers = valid_markers
+        self.update_player_rotation()
 
-    def destroy(self):
-        """Полное уничтожение мини-карты и всех её элементов. | Completely destroy minimap and all its elements."""
-        destroy(self.bg)
-        destroy(self.player_marker)
-        for _, m in self.markers:
-            destroy(m)
+    def update_player_rotation(self):
+        """Поворачивает маркер игрока по направлению взгляда | Rotate player marker with look direction"""
+        forward = self.player_root.getQuat(self.render).getForward()
+        angle = math.degrees(math.atan2(forward.x, forward.y))
+        self.player_marker.setR(angle)
