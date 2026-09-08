@@ -3,7 +3,7 @@ import os
 
 from panda3d.core import Point3, BitMask32
 
-from src.config import SHOW_BOUNDS, OBSTACLE_MASK_BIT, MAP_FILE, MODELS_DIR, PICKUP_MODELS, PLAYER_MODEL
+from src.config import SHOW_BOUNDS, OBSTACLE_MASK_BIT, MAP_FILE, PICKUP_MODELS, PLAYER_MODEL
 from src.core.npc_config import NPCS
 from src.entities.npc_enemies import Npc_Enemy
 from src.entities.pickup import PickupItem

@@ -81,9 +81,9 @@ class Npc_Enemy:
     def anim(self, key):
         """Имя анимации по ключу с запасным вариантом | Anim name by key with fallback"""
         name = self.anims.get(key)
-        if name is not None and name in self.actor.getAnimNames():
-            return name
         anims = self.actor.getAnimNames()
+        if name is not None and name in anims:
+            return name
         return anims[0] if anims else None
 
     def play_anim(self, key):

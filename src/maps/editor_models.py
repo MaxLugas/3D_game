@@ -125,11 +125,7 @@ class EditorModelsMixin:
         bmin, bmax = node.getTightBounds(self.render)
 
         for other_entry, other_node, omin, omax in self.placed:
-            if (
-                bmin.x <= omax.x and bmax.x >= omin.x
-                and bmin.y <= omax.y and bmax.y >= omin.y
-                and bmin.z <= omax.z and bmax.z >= omin.z
-            ):
+            if self.boxes_overlap(bmin, bmax, omin, omax):
                 self.destroy_node(node)
                 self.notice = "overlap: not placed"
                 self.update_ui_text()
@@ -138,6 +134,15 @@ class EditorModelsMixin:
 
         self.placed.append((entry, node, bmin, bmax))
         self.update_ui_text()
+
+    @staticmethod
+    def boxes_overlap(amin, amax, bmin, bmax):
+        """Пересечение двух AABB | AABB overlap test"""
+        return (
+            amin.x <= bmax.x and amax.x >= bmin.x
+            and amin.y <= bmax.y and amax.y >= bmin.y
+            and amin.z <= bmax.z and amax.z >= bmin.z
+        )
 
     def create_world_object(self, name, pos, heading=0, pitch=0, scale=None):
         """Создаёт объект мира по названию модели | Create world object by model name"""
@@ -231,11 +236,7 @@ class EditorModelsMixin:
             return False
         pmin, pmax = self.preview_world_bounds()
         for other_entry, other_node, omin, omax in self.placed:
-            if (
-                pmin.x <= omax.x and pmax.x >= omin.x
-                and pmin.y <= omax.y and pmax.y >= omin.y
-                and pmin.z <= omax.z and pmax.z >= omin.z
-            ):
+            if self.boxes_overlap(pmin, pmax, omin, omax):
                 return True
         return False
 

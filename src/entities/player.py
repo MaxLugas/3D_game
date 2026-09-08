@@ -58,6 +58,11 @@ class Player:
         """Устанавливает состояние клавиши движения | Set movement key state"""
         self.keys[key] = value
 
+    @property
+    def moving(self):
+        """Движется ли игрок | Is the player moving"""
+        return self.keys["w"] or self.keys["a"] or self.keys["s"] or self.keys["d"]
+
     def jump(self):
         """Прыжок | Jump"""
         if self.spell_state is not None:
@@ -158,7 +163,7 @@ class Player:
             return
 
         if self.spell_state:
-            if self.spell_state == "loop" and (self.keys["w"] or self.keys["a"] or self.keys["s"] or self.keys["d"]):
+            if self.spell_state == "loop" and self.moving:
                 self.actor.stop()
                 self.current_anim = None
                 self.actor.play("Spell_Simple_Exit")
@@ -218,7 +223,7 @@ class Player:
                 self.jump_state = None
 
         if self.jump_state is None and self.oneshot_anim is None:
-            moving = self.keys["w"] or self.keys["a"] or self.keys["s"] or self.keys["d"]
+            moving = self.moving
             sprinting = moving and self.shift_down
             target = "Sprint_Loop" if sprinting else ("Walk_Loop" if moving else "Idle_Loop")
             if target != self.current_anim:
