@@ -1,21 +1,23 @@
 import json
 import os
 
-from panda3d.core import Point3, BitMask32
+from panda3d.core import Point3
 
-from src.config import SHOW_BOUNDS, OBSTACLE_MASK_BIT, MAP_FILE, PICKUP_MODELS, PLAYER_MODEL
+from src.config import SHOW_BOUNDS, MAP_FILE, PICKUP_MODELS, PLAYER_MODEL
+from src.core.collision_masks import MASK_PLAYER, MASK_OBSTACLE, collide_mask
 from src.core.npc_config import NPCS
-from src.entities.npc_enemies import Npc_Enemy
+from src.entities.npc_enemy import NpcEnemy
 from src.entities.pickup import PickupItem
 from src.maps.model_loader import load_model_or_actor, create_bounds_collider, apply_world_render
 
 
 class MapLoader:
-    def __init__(self, render, loader, pusher=None, collision_trav=None):
+    def __init__(self, render, loader, pusher=None, collision_trav=None, npc_manager=None):
         self.render = render
         self.loader = loader
         self.pusher = pusher
         self.collision_trav = collision_trav
+        self.npc_manager = npc_manager
         self.objects = []
         self.npc_enemies = []
         self.pickups = []
@@ -44,7 +46,10 @@ class MapLoader:
                         self.player_start = (pos, heading)
                     continue
                 if name in NPCS:
-                    enemy = Npc_Enemy(self.render, pos, self.pusher, self.collision_trav, model=name, heading=heading, scale=scale)
+                    enemy = NpcEnemy(
+                        self.render, pos, self.pusher, self.collision_trav,
+                        model=name, heading=heading, scale=scale, manager=self.npc_manager,
+                    )
                     self.npc_enemies.append(enemy)
                 elif name in PICKUP_MODELS:
                     pickup = PickupItem(self.render, self.loader, name, pos, heading=heading, scale=scale)
@@ -67,7 +72,7 @@ class MapLoader:
         collision = create_bounds_collider(
             node,
             f"static_{id(node)}",
-            into_mask=BitMask32.bit(1) | BitMask32.bit(OBSTACLE_MASK_BIT),
+            into_mask=collide_mask(MASK_PLAYER, MASK_OBSTACLE),
         )
         node.attachNewNode(collision)
 

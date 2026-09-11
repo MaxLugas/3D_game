@@ -1,8 +1,9 @@
 from src.config import PLAYER_MODEL
+from src.core.collision_masks import MASK_PICK
 
 # ================ Размещение объектов | Object Placement ================
 PLACEMENT_DISTANCE = 6                           # Дистанция размещения | Placement distance
-PICK_MASK_BIT = 2                                # Бит маски для пикинга объектов | Mask bit for object picking
+PICK_MASK_BIT = MASK_PICK                        # Бит маски для пикинга объектов | Mask bit for object picking
 
 # ================ Камера редактора | Editor Camera ================
 EDITOR_CAMERA_PITCH = -20                        # Начальный наклон камеры | Camera start pitch

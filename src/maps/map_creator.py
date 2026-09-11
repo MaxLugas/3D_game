@@ -35,7 +35,7 @@ class MapCreatorApp(EditorUiMixin, EditorInputMixin, EditorModelsMixin, EditorMa
         self.create_ground_tiles()
 
         self.player = EditorPlayer(self.render)
-        self.camera_controller = EditorCameraController(self.render, self.player.root, self.camera)
+        self.camera_controller = EditorCameraController(self.player.root, self.camera)
         self.camera_controller.pitch = EDITOR_CAMERA_PITCH
 
         self.models = sorted(f for f in os.listdir(MODELS_DIR) if f.lower().endswith(".bam"))
@@ -96,9 +96,8 @@ class MapCreatorApp(EditorUiMixin, EditorInputMixin, EditorModelsMixin, EditorMa
             self.camera_controller.update(dt, self.win, mw)
             self.handle_step_rotation(mw)
 
-        self.update_grounding(self.player)
-
         self.player.update_movement(dt)
+        self.update_grounding(self.player)
         self.player.apply_gravity(dt)
         self.player.clamp_position()
 

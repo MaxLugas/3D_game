@@ -1,26 +1,25 @@
 from direct.showbase.ShowBase import ShowBase
-from direct.gui.OnscreenText import OnscreenText
 from direct.showbase.ShowBaseGlobal import globalClock
 from panda3d.core import (
     Filename,
     KeyboardButton,
-    TextNode,
     get_model_path,
 )
 
 from src.config import (
     SKY_COLOR,
-    SPELL_RANGE,
-    PICKUP_RANGE,
-    PICKUP_RAY_RANGE,
     WINDOW_WIDTH,
     WINDOW_HEIGHT,
     PROJECT_ROOT,
 )
 from src.entities.player import Player
 from src.systems.camera import CameraController
-from src.systems.world_setup import WorldSetupMixin, create_crosshair
+from src.systems.world_setup import WorldSetupMixin
 from src.systems.minimap import Minimap
+from src.systems.hud import Hud
+from src.systems.combat import CombatSystem
+from src.systems.pickup import PickupSystem
+from src.systems.npc_manager import NpcManager
 from src.maps.map_loader import MapLoader
 
 
@@ -38,12 +37,17 @@ class Game(WorldSetupMixin, ShowBase):
         self.create_ground_tiles()
 
         self.player = Player(self.render)
-        self.camera_controller = CameraController(self.render, self.player.root, self.camera)
+        self.camera_controller = CameraController(self.player.root, self.camera)
 
         self.setup_collision()
-        self.setup_ui()
+        self.hud = Hud(self.aspect2d)
 
-        self.map_loader = MapLoader(self.render, self.loader, self.pusher, self.collision_trav)
+        self.npc_manager = NpcManager(self.render)
+
+        self.map_loader = MapLoader(
+            self.render, self.loader, self.pusher, self.collision_trav,
+            npc_manager=self.npc_manager,
+        )
         self.map_loader.load_map()
 
         start = self.map_loader.player_start
@@ -53,6 +57,16 @@ class Game(WorldSetupMixin, ShowBase):
 
         self.npc_enemies = self.map_loader.npc_enemies
         self.pickups = self.map_loader.pickups
+
+        self.combat = CombatSystem(
+            self.render, self.camera, self.player,
+            self.npc_enemies,
+            self.spell_ray, self.spell_queue, self.spell_trav,
+        )
+        self.pickup_system = PickupSystem(
+            self.render, self.player, self.pickups,
+            self.pickup_ray, self.pickup_queue, self.pickup_trav,
+        )
 
         self.minimap = Minimap(
             self.render,
@@ -67,8 +81,8 @@ class Game(WorldSetupMixin, ShowBase):
         self.bind_movement_keys(self.player)
 
         self.accept("space", self.player.jump)
-        self.accept("mouse1", self.on_shoot)
-        self.accept("e", self.pickup)
+        self.accept("mouse1", self.combat.on_shoot)
+        self.accept("e", self.pickup_system.pickup)
 
         self.clear_modifier_buttons()
 
@@ -86,100 +100,6 @@ class Game(WorldSetupMixin, ShowBase):
 
         self.setup_ground_ray()
 
-    def setup_ui(self):
-        """Создаёт прицел, подсказку подбора и счётчик FPS | Create crosshair, pickup hint and FPS counter"""
-        self.crosshair = create_crosshair(self.aspect2d)
-
-        self.pickup_hint = OnscreenText(
-            text="[E]",
-            pos=(0, -0.15),
-            scale=0.07,
-            fg=(1, 1, 1, 1),
-            mayChange=True
-        )
-        self.pickup_hint.hide()
-
-        self.fps_label = OnscreenText(
-            text="",
-            pos=(1 / self.aspect2d.getSx() - 0.02, 0.95),
-            align=TextNode.ARight,
-            scale=0.05,
-            fg=(1, 1, 1, 1),
-            mayChange=True,
-        )
-        self.fps_frames = 0
-        self.fps_time = 0.0
-
-    def update_fps(self, dt):
-        """Обновляет счётчик FPS раз в полсекунды | Update FPS counter every half second"""
-        self.fps_frames += 1
-        self.fps_time += dt
-        if self.fps_time >= 0.5:
-            self.fps_label.setText(f"FPS: {round(self.fps_frames / self.fps_time)}")
-            self.fps_frames = 0
-            self.fps_time = 0.0
-
-    def on_shoot(self):
-        """Обработчик выстрела | Shoot handler"""
-        self.player.shoot(on_spell_hit=self.perform_shot)
-
-    def perform_shot(self):
-        """Проверка попадания заклинания в дроидов | Check spell hit against npc_enemies"""
-        alive = [d for d in self.npc_enemies if d.is_alive()]
-        if not alive:
-            return
-
-        entry = self.cast_ray(self.spell_ray, self.spell_trav, self.spell_queue)
-        if entry is None:
-            return
-
-        hit_np = entry.getIntoNodePath()
-        dist = (entry.getSurfacePoint(self.render) - self.camera.getPos(self.render)).length()
-
-        for enemy in alive:
-            if hit_np == enemy.collider and dist <= SPELL_RANGE:
-                enemy.die()
-                break
-
-    def pickup(self):
-        """Подбор предмета клавишей E | Pick up item with E key"""
-        if self.player.jump_state in ("start", "loop"):
-            return
-        target = self.can_pickup()
-        if target is not None:
-            target.destroy()
-            self.player.play_animation("PickUp_Table")
-
-    def can_pickup(self):
-        """Определяет предмет подбора | Find pickup target"""
-        available = [p for p in self.pickups if p.is_available()]
-        if not available:
-            return None
-
-        player_pos = self.player.root.getPos(self.render)
-
-        nearest = None
-        nearest_dist = PICKUP_RANGE
-        for p in available:
-            d = (p.get_position() - player_pos).length()
-            if d <= nearest_dist:
-                nearest = p
-                nearest_dist = d
-        if nearest is not None:
-            return nearest
-
-        entry = self.cast_ray(self.pickup_ray, self.pickup_trav, self.pickup_queue)
-        if entry is None:
-            return None
-
-        hit_np = entry.getIntoNodePath()
-        dist = (entry.getSurfacePoint(self.render) - player_pos).length()
-
-        for p in available:
-            if hit_np == p.collider and dist <= PICKUP_RAY_RANGE:
-                return p
-        return None
-
     def update(self, task):
         """Обновление игры каждый кадр | Update game every frame"""
         dt = globalClock.getDt()
@@ -188,7 +108,7 @@ class Game(WorldSetupMixin, ShowBase):
         if mw is None:
             return task.cont  # headless/offscreen: нет ввода | no input available
 
-        self.update_fps(dt)
+        self.hud.update_fps(dt)
 
         tab_held = mw.isButtonDown(KeyboardButton.tab())
         self.minimap.set_visible(tab_held)
@@ -199,25 +119,19 @@ class Game(WorldSetupMixin, ShowBase):
 
         self.camera_controller.update(dt, self.win, mw)
 
-        self.update_grounding(self.player)
-
-        if self.can_pickup() is not None:
-            self.pickup_hint.show()
-        else:
-            self.pickup_hint.hide()
-
         self.player.update_movement(dt)
+        self.update_grounding(self.player)
         self.player.apply_gravity(dt)
         self.player.clamp_position()
 
+        self.pickup_system.update()
+        self.hud.set_pickup_hint(self.pickup_system.can_pickup_now)
+
         player_pos = self.player.root.getPos(self.render)
-        alive = [d for d in self.npc_enemies if d.is_alive()]
-        for enemy in alive:
-            others = [d for d in alive if d is not enemy]
-            enemy.update(player_pos, dt, others)
+        self.npc_manager.update(player_pos, dt)
 
         self.collision_trav.traverse(self.render)
 
-        self.player.resolve_animation(on_spell_hit=self.perform_shot)
+        self.player.resolve_animation(on_spell_hit=self.combat.perform_shot)
 
         return task.cont

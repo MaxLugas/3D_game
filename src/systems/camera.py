@@ -34,7 +34,7 @@ DEFAULT_CAMERA_PARAMS = {
 
 
 class CameraController:
-    def __init__(self, render, player_root, camera, overrides=None):
+    def __init__(self, player_root, camera, overrides=None):
         """Создаёт иерархию камеры вокруг игрока | Create camera hierarchy around player"""
         self.camera = camera
         self.player_root = player_root

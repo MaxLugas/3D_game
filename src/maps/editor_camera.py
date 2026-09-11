@@ -3,6 +3,6 @@ from src.systems.camera import CameraController
 
 
 class EditorCameraController(CameraController):
-    def __init__(self, render, player_root, camera):
+    def __init__(self, player_root, camera):
         """Камера редактора с другими параметрами. | Editor camera with different settings."""
-        super().__init__(render, player_root, camera, overrides=EDITOR_CAMERA)
+        super().__init__(player_root, camera, overrides=EDITOR_CAMERA)

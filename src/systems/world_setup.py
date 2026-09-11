@@ -24,10 +24,25 @@ from src.config import (
     SUN_COLOR,
     SUN_HPR,
     GROUND_THICKNESS,
-    GROUND_TOLERANCE,
     PLAYER_COLLISION_CENTER,
     PLAYER_COLLISION_RADIUS,
 )
+from src.core.collision_masks import MASK_PLAYER, collide_mask
+
+
+def cast_ray(render, ray, trav, queue):
+    """Запускает луч из камеры и возвращает ближайшее попадание | Cast camera ray and return closest entry"""
+    ray.setOrigin(0, 0, 0)
+    ray.setDirection(0, 1, 0)
+
+    queue.clearEntries()
+    trav.traverse(render)
+
+    if queue.getNumEntries() == 0:
+        return None
+
+    queue.sortEntries()
+    return queue.getEntry(0)
 
 
 def create_crosshair(aspect2d):
@@ -69,7 +84,7 @@ class WorldSetupMixin:
         # === Коллайдер земли | Ground collider ===
         ground_box = CollisionNode("groundCollision")
         ground_box.addSolid(CollisionBox(Point3(0, 0, -GROUND_THICKNESS), MAP_SIZE, MAP_SIZE, GROUND_THICKNESS))
-        ground_box.setIntoCollideMask(BitMask32.bit(1))
+        ground_box.setIntoCollideMask(collide_mask(MASK_PLAYER))
         self.render.attachNewNode(ground_box)
 
     def setup_player_collision(self):
@@ -78,7 +93,7 @@ class WorldSetupMixin:
 
         player_node = CollisionNode("player")
         player_node.addSolid(CollisionSphere(*PLAYER_COLLISION_CENTER, PLAYER_COLLISION_RADIUS))
-        player_node.setFromCollideMask(BitMask32.bit(1))
+        player_node.setFromCollideMask(collide_mask(MASK_PLAYER))
         player_node.setIntoCollideMask(BitMask32.allOff())
 
         self.player_collider = self.player.root.attachNewNode(player_node)
@@ -95,7 +110,7 @@ class WorldSetupMixin:
 
         ground_ray_node = CollisionNode("groundRay")
         ground_ray_node.addSolid(self.ground_ray)
-        ground_ray_node.setFromCollideMask(BitMask32.bit(1))
+        ground_ray_node.setFromCollideMask(collide_mask(MASK_PLAYER))
         ground_ray_node.setIntoCollideMask(BitMask32.allOff())
 
         self.ground_ray_np = self.player.root.attachNewNode(ground_ray_node)
@@ -108,7 +123,7 @@ class WorldSetupMixin:
         ray = CollisionRay()
         ray_node = CollisionNode(name)
         ray_node.addSolid(ray)
-        ray_node.setFromCollideMask(BitMask32.bit(mask_bit))
+        ray_node.setFromCollideMask(collide_mask(mask_bit))
         ray_node.setIntoCollideMask(BitMask32.allOff())
 
         ray_np = self.camera.attachNewNode(ray_node)
@@ -119,17 +134,7 @@ class WorldSetupMixin:
 
     def cast_ray(self, ray, trav, queue):
         """Запускает луч и возвращает ближайшее попадание | Cast ray and return closest entry"""
-        ray.setOrigin(0, 0, 0)
-        ray.setDirection(0, 1, 0)
-
-        queue.clearEntries()
-        trav.traverse(self.render)
-
-        if queue.getNumEntries() == 0:
-            return None
-
-        queue.sortEntries()
-        return queue.getEntry(0)
+        return cast_ray(self.render, ray, trav, queue)
 
     def init_mouse(self, task):
         """Возвращает курсор в центр экрана | Recenter the mouse cursor"""
@@ -170,17 +175,19 @@ class WorldSetupMixin:
         )
 
     def update_grounding(self, player):
-        """Определяет приземление по лучу к земле | Detect landing with ground ray"""
+        """
+        Находит высоту поверхности под игроком лучом к земле.
+        Единая физика выполняется в Player.apply_gravity.
+        Find the surface height under the player with a ground ray.
+        Unified physics is performed in Player.apply_gravity.
+        """
         self.ground_queue.clearEntries()
         self.ground_trav.traverse(self.render)
 
-        player.is_grounded = False
-
+        ground_z = None
         if self.ground_queue.getNumEntries() > 0:
             self.ground_queue.sortEntries()
             entry = self.ground_queue.getEntry(0)
-            z = entry.getSurfacePoint(self.render).getZ()
-            if player.root.getZ() <= z + GROUND_TOLERANCE and player.velocity_z <= 0:
-                player.is_grounded = True
-                player.root.setZ(z)
-                player.velocity_z = 0
+            ground_z = entry.getSurfacePoint(self.render).getZ()
+
+        player.ground_z = ground_z

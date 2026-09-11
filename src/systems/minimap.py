@@ -2,8 +2,10 @@ from pathlib import Path
 import math
 import subprocess
 import sys
+import threading
 
 from panda3d.core import CardMaker, TransparencyAttrib, LVector2
+from direct.task.TaskManagerGlobal import taskMgr
 
 from src.config import (
     MINIMAP_SIZE,
@@ -92,7 +94,8 @@ class Minimap:
         self.pickups = pickups
         self.minimap_size = MINIMAP_SIZE
 
-        self.model_icons = self.load_icons()
+        self.model_icons = {}
+        self.marker_meta = {}
 
         self.root = aspect2d.attachNewNode("minimap")
         self.background = self.create_background()
@@ -101,16 +104,49 @@ class Minimap:
         self.create_markers()
         self.set_visible(False)
 
-    def load_icons(self):
-        """Генерирует недостающие и загружает иконки из моделей | Generate missing and load model icons"""
-        models = needed_models(self.objects, self.npc_enemies, self.pickups)
-        ensure_model_icons(models)
-        ensure_player_icon()
+        self.start_async_icons()
+
+    def _load_existing_icons(self, models=None):
+        """Загружает только готовые иконки | Load only already-generated icons"""
+        if models is None:
+            models = needed_models(self.objects, self.npc_enemies, self.pickups)
         icons = load_icon_textures(self.loader, models)
         player_path = ICONS_DIR / PLAYER_ICON
         if player_path.exists():
             icons[PLAYER_ICON] = self.loader.loadTexture(panda_path(player_path))
         return icons
+
+    def start_async_icons(self):
+        """Генерирует недостающие иконки в фоне, чтобы не блокировать старт игры | Generate missing icons in the background"""
+        self._icons_thread = threading.Thread(target=self._generate_icons_daemon, daemon=True)
+        self._icons_thread.start()
+        taskMgr.doMethodLater(0.1, self._poll_icons, "minimap_icons")
+
+    def _generate_icons_daemon(self):
+        try:
+            models = needed_models(self.objects, self.npc_enemies, self.pickups)
+            ensure_model_icons(models)
+            ensure_player_icon()
+        except Exception:
+            pass
+
+    def _poll_icons(self, task):
+        """Ждёт завершения генерации и подгружает текстуры | Wait for generation and load textures"""
+        if self._icons_thread.is_alive():
+            return task.cont
+        self.model_icons = self._load_existing_icons()
+        self.apply_marker_icons()
+        return task.done
+
+    def apply_marker_icons(self):
+        """Обновляет маркеры свежими текстурами | Apply freshly loaded textures to markers"""
+        for marker, (icon_key, fallback) in self.marker_meta.items():
+            texture = self.model_icons.get(icon_key)
+            if texture is not None:
+                marker.setTexture(texture)
+                marker.setColor(1, 1, 1, 1)
+            elif fallback is not None:
+                marker.setColor(*fallback)
 
     def create_background(self):
         card_maker = CardMaker("minimap_bg")
@@ -149,35 +185,42 @@ class Minimap:
         marker.setDepthWrite(False)
         return marker
 
+    def create_marker_with_icon(self, name, scale, icon_key, fallback_color=None):
+        """Маркер с иконкой и запасным цветом | Marker with icon and fallback color"""
+        texture = self.model_icons.get(icon_key)
+        color = None if texture is not None else fallback_color
+        marker = self.create_marker(name, scale, texture=texture, color=color)
+        self.marker_meta[marker] = (icon_key, fallback_color)
+        return marker
+
     def create_markers(self):
         player_icon = self.model_icons.get(PLAYER_ICON)
-        self.player_marker = self.create_marker(
+        self.player_marker = self.create_marker_with_icon(
             "player_marker", MINIMAP_PLAYER_MARKER_SCALE,
-            texture=player_icon, color=(0, 1, 0, 1) if player_icon is None else None,
+            PLAYER_ICON, (0, 1, 0, 1) if player_icon is None else None,
         )
         self.markers.append((self.player_root, self.player_marker))
 
         for name, node in self.objects:
-            icon = self.model_icons.get(name)
-            marker = self.create_marker(
+            marker = self.create_marker_with_icon(
                 f"obj_{id(node)}", MINIMAP_OBJECT_MARKER_SCALE,
-                texture=icon,
+                name, None,
             )
             self.markers.append((node, marker))
 
         for enemy in self.npc_enemies:
             enemy_icon = self.model_icons.get(enemy.model_name)
-            marker = self.create_marker(
+            marker = self.create_marker_with_icon(
                 f"npc_{id(enemy)}", MINIMAP_NPC_MARKER_SCALE,
-                texture=enemy_icon, color=(1, 0, 0, 1) if enemy_icon is None else None,
+                enemy.model_name, (1, 0, 0, 1) if enemy_icon is None else None,
             )
             self.markers.append((enemy, marker))
 
         for pickup in self.pickups:
             pickup_icon = self.model_icons.get(pickup.model_name)
-            marker = self.create_marker(
+            marker = self.create_marker_with_icon(
                 f"pickup_{id(pickup)}", MINIMAP_OBJECT_MARKER_SCALE,
-                texture=pickup_icon, color=(1, 1, 0, 1) if pickup_icon is None else None,
+                pickup.model_name, (1, 1, 0, 1) if pickup_icon is None else None,
             )
             self.markers.append((pickup, marker))
 
