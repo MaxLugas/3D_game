@@ -20,7 +20,7 @@ class Npc_Enemy:
 
         config = npc_config(model)
         self.aggro_distance = config["aggro_distance"]
-        self.attack_distance = config["attack_distance"]
+        self.attack_distance = config["attack_distance"] * scale
         self.run_speed = config["run_speed"]
         self.separation_distance = config["separation_distance"]
         self.avoid_lookahead = config["avoid_lookahead"]
