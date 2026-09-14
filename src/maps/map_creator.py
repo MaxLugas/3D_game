@@ -6,6 +6,7 @@ if __package__ in (None, ""):
     _ROOT = Path(__file__).resolve().parent.parent.parent
     sys.path.insert(0, str(_ROOT))
 
+import simplepbr
 from direct.showbase.ShowBase import ShowBase
 from direct.showbase.ShowBaseGlobal import globalClock
 from panda3d.core import Filename, get_model_path
@@ -25,6 +26,8 @@ class MapCreatorApp(EditorUiMixin, EditorInputMixin, EditorModelsMixin, EditorMa
     def __init__(self):
         """Инициализация редактора карт | Initialize map editor"""
         super().__init__()
+
+        simplepbr.init()
 
         get_model_path().prepend_directory(Filename.from_os_specific(str(PROJECT_ROOT)))
 
