@@ -20,7 +20,7 @@ def panda_path(path):
 
 # ================ Модели | Models ================
 PLAYER_MODEL = "UAL1_Standard.bam"                       # Модель игрока | Player model
-PICKUP_MODELS = ("statue.bam", 'chest.bam')              # Имена моделей-предметов подбора в map.json | Pickup model names in map.json
+PICKUP_MODELS = ("Silent_Noblewoman.bam", 'Treasure_Chest.bam')              # Имена моделей-предметов подбора в map.json | Pickup model names in map.json
 PLAYER_ICON = "player.png"                               # Иконка игрока на миникарте | Player minimap icon
 
 # Модели, которые некорректно рендерятся под освещением сцены (чернеют/невидимы).

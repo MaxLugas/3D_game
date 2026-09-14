@@ -1,3 +1,4 @@
+import simplepbr
 from direct.showbase.ShowBase import ShowBase
 from direct.showbase.ShowBaseGlobal import globalClock
 from panda3d.core import (
@@ -27,6 +28,8 @@ class Game(WorldSetupMixin, ShowBase):
     def __init__(self):
         """Инициализация игры: сцена, игрок, коллайдеры, карта | Initialize game: scene, player, colliders, map"""
         super().__init__()
+
+        simplepbr.init()
 
         get_model_path().prepend_directory(Filename.from_os_specific(str(PROJECT_ROOT)))
 
