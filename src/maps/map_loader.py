@@ -8,7 +8,7 @@ from src.core.collision_masks import MASK_PLAYER, MASK_OBSTACLE, collide_mask
 from src.core.npc_config import NPCS
 from src.entities.npc_enemy import NpcEnemy
 from src.entities.pickup import PickupItem
-from src.maps.model_loader import load_model_or_actor, create_bounds_collider, apply_world_render
+from src.maps.model_loader import load_model_or_actor, create_bounds_collider
 
 
 class MapLoader:
@@ -78,5 +78,4 @@ class MapLoader:
 
     def load_model(self, name):
         """Загружает статичную модель. | Load static model."""
-        node = load_model_or_actor(self.loader, name)
-        return apply_world_render(node, name)
+        return load_model_or_actor(self.loader, name)

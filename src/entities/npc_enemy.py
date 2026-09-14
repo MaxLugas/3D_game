@@ -6,7 +6,6 @@ from src.config import SHOW_BOUNDS
 from src.core.collision_masks import MASK_PLAYER, MASK_OBSTACLE, collide_mask
 from src.core.npc_config import NPC_MODELS, npc_config
 from src.entities.base_entity import BaseEntity
-from src.maps.model_loader import apply_world_render
 
 
 class NpcEnemy(BaseEntity):
@@ -32,7 +31,6 @@ class NpcEnemy(BaseEntity):
             scale=scale if scale else 1,
             show_bounds=SHOW_BOUNDS,
         )
-        apply_world_render(self.actor, model)
         self.loop_anim("idle")
 
         self.berserk = False
