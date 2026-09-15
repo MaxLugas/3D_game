@@ -1,5 +1,35 @@
+from pathlib import Path
+
 from direct.actor.Actor import Actor
 from panda3d.core import CollisionNode, CollisionBox, Point3, BitMask32
+
+
+def load_lod(loader, path, lod="LOD0"):
+    """Загружает модель и оставляет только один уровень детализации | Load model and keep only one LOD level"""
+    node = loader.loadModel(path)
+    if not node.getChildren():
+        return node
+    base = Path(path).stem
+
+    lod_nodes = {}
+    for child in node.getChildren():
+        name = child.getName()
+        if name.startswith(f"{base}_LOD"):
+            lod_nodes[name.rsplit("_", 1)[-1]] = child
+
+    if not lod_nodes:
+        return node  # у модели нет LOD — показать целиком | no LOD nodes — show as-is
+
+    if lod not in lod_nodes:
+        fallback = next((lvl for lvl in ("LOD2", "LOD1", "LOD0") if lvl in lod_nodes), None)
+        if fallback is not None and fallback != lod:
+            print(f"[warn] LOD '{lod}' не найден в {path}, используется '{fallback}'")
+            lod = fallback
+
+    for child in node.getChildren():
+        if child != lod_nodes[lod]:
+            child.hide()
+    return node
 
 
 def pose_t_pose(actor, anims):

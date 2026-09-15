@@ -3,12 +3,12 @@ import os
 
 from panda3d.core import Point3
 
-from src.config import SHOW_BOUNDS, MAP_FILE, PICKUP_MODELS, PLAYER_MODEL
+from src.config import SHOW_BOUNDS, MAP_FILE, PICKUP_MODELS, PLAYER_MODEL, LOD_LEVEL
 from src.core.collision_masks import MASK_PLAYER, MASK_OBSTACLE, collide_mask
 from src.core.npc_config import NPCS
 from src.entities.npc_enemy import NpcEnemy
 from src.entities.pickup import PickupItem
-from src.maps.model_loader import load_model_or_actor, create_bounds_collider
+from src.maps.model_loader import load_lod, create_bounds_collider
 
 
 class MapLoader:
@@ -78,4 +78,4 @@ class MapLoader:
 
     def load_model(self, name):
         """Загружает статичную модель. | Load static model."""
-        return load_model_or_actor(self.loader, name)
+        return load_lod(self.loader, name, LOD_LEVEL)

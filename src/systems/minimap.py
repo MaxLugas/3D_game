@@ -25,7 +25,11 @@ from src.config import (
 
 
 def icon_path(model):
-    return ICONS_DIR / f"{Path(model).stem}.png"
+    """Одна иконка для обычной и lowpoly версии модели | Single icon for normal and lowpoly model variants"""
+    stem = Path(model).stem
+    if stem.endswith("_lowpoly"):
+        stem = stem[: -len("_lowpoly")]
+    return ICONS_DIR / f"{stem}.png"
 
 
 def needed_models(objects, npc_enemies, pickups):

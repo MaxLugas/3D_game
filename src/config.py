@@ -55,6 +55,7 @@ PICKUP_RAY_RANGE = 20                            # Дистанция луча �
 SPELL_RANGE = 25                                 # Дистанция заклинания | Spell range
 
 # ================ Физика и графика | Physics and Graphics ================
+LOD_LEVEL = "LOD1"                               # Уровень детализации моделей (LOD0/LOD1/LOD2) | Model detail level
 GROUND_TOLERANCE = 0.05                          # Допуск приземления | Ground tolerance
 GROUND_SNAP = 0.6                                # Порог отрыва от земли (спуск) | Ground snap/drop threshold
 GROUND_THICKNESS = 0.5                           # Толщина земли | Ground thickness
