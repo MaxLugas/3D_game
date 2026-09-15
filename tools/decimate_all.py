@@ -1,13 +1,16 @@
-import bpy
 import os
-import sys
-from pathlib import Path
+
+import bpy
 
 SRC = "/home/lugovskiy_maksim/PycharmProjects/ursina_test/tools/models_glb"
 DST = "/home/lugovskiy_maksim/PycharmProjects/ursina_test/tools/models_glb_lowpoly"
 RATIO = 0.5
 
 os.makedirs(DST, exist_ok=True)
+
+
+def fmt(n):
+    return f"{n:,}"
 
 
 def clear_scene():
@@ -28,19 +31,11 @@ def clear_scene():
 
 
 def count_polys():
-    total = 0
-    for obj in bpy.context.scene.objects:
-        if obj.type == 'MESH' and obj.data:
-            total += len(obj.data.polygons)
-    return total
+    return sum(len(obj.data.polygons) for obj in bpy.context.scene.objects if obj.type == 'MESH' and obj.data)
 
 
 def count_verts():
-    total = 0
-    for obj in bpy.context.scene.objects:
-        if obj.type == 'MESH' and obj.data:
-            total += len(obj.data.vertices)
-    return total
+    return sum(len(obj.data.vertices) for obj in bpy.context.scene.objects if obj.type == 'MESH' and obj.data)
 
 
 def process_file(filename):
@@ -85,34 +80,31 @@ def process_file(filename):
     bpy.ops.export_scene.gltf(filepath=out_path, export_format='GLB')
 
     pct = round(new_polys / orig_polys * 100, 1) if orig_polys else 0
-    return filename, out_name, orig_polys, orig_verts, new_polys, new_verts, pct
+    return out_name, orig_polys, orig_verts, new_polys, new_verts, pct
 
 
 glb_files = sorted([f for f in os.listdir(SRC) if f.endswith('.glb')])
+total = len(glb_files)
 results = []
 
-for f in glb_files:
-    print(f"\n--- Processing: {f} ---", flush=True)
+for i, f in enumerate(glb_files, 1):
     try:
         result = process_file(f)
-        results.append(result)
-        print(f"  Done: {result[2]} -> {result[4]} polys ({result[6]}%)", flush=True)
     except Exception as e:
-        print(f"  ERROR: {e}", flush=True)
-        results.append((f, f.replace('.glb', '_lowpoly.glb'), 0, 0, 0, 0, 0))
+        print(f"[{i}/{total}] {f}: ОШИБКА: {e}")
+        result = (f.replace('.glb', '_lowpoly.glb'), 0, 0, 0, 0, 0)
+    out_name, op, ov, np_, nv, pct = result
+    if np_:
+        print(f"[{i}/{total}] {f}: {fmt(op)} -> {fmt(np_)} пол. ({pct}% от оригинала)")
+    results.append(result)
 
 report_path = os.path.join(DST, "polygon_counts.txt")
 with open(report_path, 'w', encoding='utf-8') as fp:
-    fp.write("=== Polygon Counts: Before and After Decimation (ratio={}) ===\n\n".format(RATIO))
-    for orig_name, out_name, op, ov, np, nv, pct in results:
-        fp.write(f"Model: {orig_name}\n")
-        if op:
-            fp.write(f"  Polygons: {op} -> {np} ({pct}%)\n")
-            fp.write(f"  Vertices: {ov} -> {nv}\n")
+    fp.write(f"Сжатие моделей (ratio={RATIO})\n\n")
+    for out_name, op, ov, np_, nv, pct in results:
+        if np_:
+            fp.write(f"{out_name}: {fmt(op)} -> {fmt(np_)} пол. ({pct}%)\n")
         else:
-            fp.write(f"  FAILED\n")
-        fp.write(f"  Output:   {out_name}\n\n")
+            fp.write(f"{out_name}: ОШИБКА\n")
 
-print(f"\n=== ALL DONE. Report saved to {report_path} ===")
-for r in results:
-    print(f"  {r[0]}: {r[2]} -> {r[4]} ({r[6]}%)")
+print(f"\nГотово. Отчёт: {report_path}")

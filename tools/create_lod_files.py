@@ -1,6 +1,7 @@
-import bpy
 import os
-import sys
+import traceback
+
+import bpy
 
 SRC = "/home/lugovskiy_maksim/PycharmProjects/ursina_test/tools/models_glb"
 DST = "/home/lugovskiy_maksim/PycharmProjects/ursina_test/tools/model_converted"
@@ -11,6 +12,10 @@ LOD_LEVELS = [
 ]
 
 os.makedirs(DST, exist_ok=True)
+
+
+def fmt(n):
+    return f"{n:,}"
 
 
 def clear_scene():
@@ -32,7 +37,7 @@ def clear_scene():
 
 def duplicate_mesh_obj(src_obj, new_name):
     new_mesh = src_obj.data.copy()
-    new_mesh.name = new_name + "_mesh"
+    new_mesh.name = f"{new_name}_mesh"
     new_obj = src_obj.copy()
     new_obj.data = new_mesh
     new_obj.name = new_name
@@ -49,22 +54,16 @@ def process_file(filename):
     bpy.ops.import_scene.gltf(filepath=filepath)
 
     source_mesh_objects = [obj for obj in bpy.context.scene.objects if obj.type == 'MESH']
-    armature = next((obj for obj in bpy.context.scene.objects if obj.type == 'ARMATURE'), None)
-
     if not source_mesh_objects:
-        print(f"  WARNING: no mesh objects found in {filename}")
-        return
+        return None
 
     for src_obj in source_mesh_objects:
         src_obj.select_set(False)
 
     for lod_name, ratio in LOD_LEVELS:
-        print(f"  {lod_name}: ratio={ratio}", end="", flush=True)
-
         if ratio >= 1.0:
             for src_obj in source_mesh_objects:
-                new_obj = duplicate_mesh_obj(src_obj, f"{base_name}_{lod_name}")
-                new_obj.select_set(False)
+                duplicate_mesh_obj(src_obj, f"{base_name}_{lod_name}").select_set(False)
         else:
             for src_obj in source_mesh_objects:
                 new_obj = duplicate_mesh_obj(src_obj, f"{base_name}_{lod_name}")
@@ -88,32 +87,35 @@ def process_file(filename):
                     new_mod.object = arm_obj
 
                 new_obj.select_set(False)
-                print(f" [{len(new_obj.data.polygons)} polys]", end="", flush=True)
-
-        print()
 
     out_path = os.path.join(DST, filename)
     bpy.ops.export_scene.gltf(filepath=out_path, export_format='GLB')
 
-    total_polys = sum(len(obj.data.polygons) for obj in bpy.context.scene.objects if obj.type == 'MESH')
-    return base_name, total_polys
+    lod_polys = {}
+    for obj in bpy.context.scene.objects:
+        if obj.type != 'MESH':
+            continue
+        for lod_name in ("LOD0", "LOD1", "LOD2"):
+            if obj.name.endswith(f"_{lod_name}"):
+                lod_polys[lod_name] = lod_polys.get(lod_name, 0) + len(obj.data.polygons)
+    return lod_polys
 
 
 glb_files = sorted([f for f in os.listdir(SRC) if f.endswith('.glb')])
-results = []
+total = len(glb_files)
 
-for f in glb_files:
-    print(f"\n=== {f} ===", flush=True)
+for i, f in enumerate(glb_files, 1):
+    name = f.replace(".glb", "")
     try:
-        result = process_file(f)
-        if result:
-            results.append(result)
-    except Exception as e:
-        import traceback
+        lod_polys = process_file(f)
+    except Exception:
+        print(f"[{i}/{total}] {name}: ОШИБКА")
         traceback.print_exc()
-        results.append((f.replace(".glb", ""), 0))
+        continue
+    if not lod_polys:
+        print(f"[{i}/{total}] {name}: нет полигонов, пропущено")
+        continue
+    parts = " | ".join(f"{lod}: {fmt(lod_polys.get(lod, 0))}" for lod in ("LOD0", "LOD1", "LOD2"))
+    print(f"[{i}/{total}] {name}: {parts} пол.")
 
-print("\n\n=== SUMMARY ===")
-for name, total in results:
-    print(f"  {name}: {total} total polys in LOD file")
-print(f"\nAll files saved to: {DST}")
+print(f"\nГотово. Файлы сохранены в: {DST}")
