@@ -8,7 +8,7 @@ from src.core.collision_masks import MASK_PLAYER, MASK_OBSTACLE, collide_mask
 from src.core.npc_config import NPCS
 from src.entities.npc_enemy import NpcEnemy
 from src.entities.pickup import PickupItem
-from src.maps.model_loader import load_lod, create_bounds_collider
+from src.maps.model_loader import load_lod, create_mesh_collider
 
 
 class MapLoader:
@@ -64,17 +64,13 @@ class MapLoader:
                     node.setScale(scale if scale else 1)
                     if SHOW_BOUNDS:
                         node.showBounds()
-                    self.setup_collidable_object(node)
+                    self.setup_collidable_object(node, name)
                     self.objects.append((name, node))
 
-    def setup_collidable_object(self, node):
+    def setup_collidable_object(self, node, model_name):
         """Создаёт коллайдер для статичного объекта. | Create collider for static object."""
-        collision = create_bounds_collider(
-            node,
-            f"static_{id(node)}",
-            into_mask=collide_mask(MASK_PLAYER, MASK_OBSTACLE),
-        )
-        node.attachNewNode(collision)
+        into_mask = collide_mask(MASK_PLAYER, MASK_OBSTACLE)
+        create_mesh_collider(node, f"static_{id(node)}", into_mask=into_mask)
 
     def load_model(self, name):
         """Загружает статичную модель. | Load static model."""
