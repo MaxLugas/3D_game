@@ -6,6 +6,7 @@ if __package__ in (None, ""):
     _ROOT = Path(__file__).resolve().parent.parent.parent
     sys.path.insert(0, str(_ROOT))
 
+import simplepbr
 from direct.showbase.ShowBase import ShowBase
 from direct.showbase.ShowBaseGlobal import globalClock
 from panda3d.core import Filename, get_model_path
@@ -26,6 +27,8 @@ class MapCreatorApp(EditorUiMixin, EditorInputMixin, EditorModelsMixin, EditorMa
         """Инициализация редактора карт | Initialize map editor"""
         super().__init__()
 
+        simplepbr.init()
+
         get_model_path().prepend_directory(Filename.from_os_specific(str(PROJECT_ROOT)))
 
         self.disableMouse()
@@ -35,7 +38,7 @@ class MapCreatorApp(EditorUiMixin, EditorInputMixin, EditorModelsMixin, EditorMa
         self.create_ground_tiles()
 
         self.player = EditorPlayer(self.render)
-        self.camera_controller = EditorCameraController(self.render, self.player.root, self.camera)
+        self.camera_controller = EditorCameraController(self.player.root, self.camera)
         self.camera_controller.pitch = EDITOR_CAMERA_PITCH
 
         self.models = sorted(f for f in os.listdir(MODELS_DIR) if f.lower().endswith(".bam"))
@@ -96,9 +99,8 @@ class MapCreatorApp(EditorUiMixin, EditorInputMixin, EditorModelsMixin, EditorMa
             self.camera_controller.update(dt, self.win, mw)
             self.handle_step_rotation(mw)
 
-        self.update_grounding(self.player)
-
         self.player.update_movement(dt)
+        self.update_grounding(self.player)
         self.player.apply_gravity(dt)
         self.player.clamp_position()
 

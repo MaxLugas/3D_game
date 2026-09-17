@@ -9,10 +9,13 @@ from src.config import (
     PLAYER_SCALE,
     PLAYER_HEADING,
     PLAYER_MODEL,
+    GROUND_TOLERANCE,
+    GROUND_SNAP,
 )
+from src.entities.base_entity import BaseEntity
 
 
-class Player:
+class Player(BaseEntity):
     def __init__(
         self,
         render,
@@ -23,7 +26,7 @@ class Player:
         map_size=MAP_SIZE,
     ):
         """Создаёт игрока: модель, анимации, параметры движения | Create player: model, animations, movement params"""
-        self.render = render
+        super().__init__(render, PLAYER_MODEL)
 
         self.move_speed = move_speed
         self.sprint_multiplier = sprint_multiplier
@@ -45,6 +48,7 @@ class Player:
 
         self.velocity_z = 0
         self.is_grounded = True
+        self.ground_z = None
 
         self.current_anim = None
         self.oneshot_anim = None
@@ -138,18 +142,42 @@ class Player:
             self.root.setPos(self.root.getPos() + direction * speed * dt)
 
     def apply_gravity(self, dt):
-        """Применяет гравитацию и приземление | Apply gravity and landing"""
+        """
+        Единая физика: гравитация + приземление по высоте земли (ground_z).
+        Unified physics: gravity + landing using the ground ray height (ground_z).
+        """
+        ground_z = self.ground_z
+
+        if self.is_grounded:
+            if ground_z is None:
+                # Опора пропала | support is gone
+                self.is_grounded = False
+            elif ground_z > self.root.getZ() + GROUND_TOLERANCE:
+                # Ступенька вверх | step up
+                self.root.setZ(ground_z)
+                self.velocity_z = 0
+            elif ground_z < self.root.getZ() - GROUND_SNAP:
+                # Земля ушла вниз — начинаем падение | ground dropped away, start falling
+                self.is_grounded = False
+            else:
+                self.root.setZ(ground_z)
+                self.velocity_z = 0
+
         if not self.is_grounded:
             self.velocity_z += self.gravity * dt
+            new_z = self.root.getZ() + self.velocity_z * dt
 
-        new_z = self.root.getZ() + self.velocity_z * dt
+            if self.velocity_z <= 0 and ground_z is not None and new_z <= ground_z:
+                new_z = ground_z
+                self.velocity_z = 0
+                self.is_grounded = True
+            elif new_z <= 0:
+                # Страховка на границе карты | safety net at the map edge
+                new_z = 0
+                self.velocity_z = 0
+                self.is_grounded = True
 
-        if new_z <= 0:
-            new_z = 0
-            self.velocity_z = 0
-            self.is_grounded = True
-
-        self.root.setZ(new_z)
+            self.root.setZ(new_z)
 
     def clamp_position(self):
         """Ограничение перемещения по границам карты | Constrain movement within map boundaries"""

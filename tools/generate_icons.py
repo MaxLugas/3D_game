@@ -20,12 +20,16 @@ from panda3d.core import (
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.config import panda_path
-from src.maps.model_loader import load_model_or_actor
+from src.maps.model_loader import load_lod
+from src.config import MODELS_DIR, ICONS_DIR
 
-MODELS_DIR = PROJECT_ROOT / "assets" / "models"
-OUT_DIR = PROJECT_ROOT / "assets" / "icons"
 ICON_SIZE = 128
 FIT_MARGIN = 1.15
+
+
+def base_icon_name(name):
+    """Имя иконки без суффикса _lowpoly | Icon name without the _lowpoly suffix"""
+    return name[: -len("_lowpoly")] if name.endswith("_lowpoly") else name
 
 
 class IconRenderer(ShowBase):
@@ -49,7 +53,7 @@ class IconRenderer(ShowBase):
 
     def render_icon(self, model_path, out_path, heading=0, pitch=0):
         """Рендерит фронтальный вид модели и сохраняет PNG | Render model front view and save PNG"""
-        node = load_model_or_actor(self.loader, panda_path(model_path))
+        node = load_lod(self.loader, panda_path(model_path), "LOD0")
         node.reparentTo(self.render)
         node.setH(heading)
         try:
@@ -109,7 +113,7 @@ class IconRenderer(ShowBase):
 def main():
     parser = argparse.ArgumentParser(description="Генерация иконок из фронтального вида 3D-моделей")
     parser.add_argument("--models", nargs="*", help="Имена моделей без .bam (по умолчанию все из assets/models)")
-    parser.add_argument("--out", default=str(OUT_DIR), help="Папка для иконок")
+    parser.add_argument("--out", default=str(ICONS_DIR), help="Папка для иконок")
     parser.add_argument("--size", type=int, default=ICON_SIZE, help="Размер иконки в пикселях")
     parser.add_argument("--heading", type=float, default=0, help="Поворот модели вокруг Y в градусах")
     parser.add_argument("--pitch", type=float, default=0, help="Наклон камеры в градусах")
@@ -125,11 +129,17 @@ def main():
     renderer = IconRenderer(args.size)
 
     try:
+        seen = set()
         for model_path in models:
             if not model_path.exists():
                 print(f"[skip] модель не найдена: {model_path.name}")
                 continue
-            out_path = out_dir / f"{args.name if args.name else model_path.stem}.png"
+            out_name = args.name if args.name else base_icon_name(model_path.stem)
+            if out_name in seen:
+                print(f"[skip] иконка уже сгенерирована: {out_name}.png")
+                continue
+            seen.add(out_name)
+            out_path = out_dir / f"{out_name}.png"
             coverage, (w, h) = renderer.render_icon(model_path, out_path, args.heading, args.pitch)
             status = "ok" if coverage > 0.01 else "WARN: пустая иконка"
             print(f"[{status}] {model_path.name} -> {out_path} ({w}x{h}, покрытие {coverage:.0%})")

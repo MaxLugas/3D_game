@@ -20,12 +20,8 @@ def panda_path(path):
 
 # ================ Модели | Models ================
 PLAYER_MODEL = "UAL1_Standard.bam"                       # Модель игрока | Player model
-PICKUP_MODELS = ("statue.bam", 'chest.bam')              # Имена моделей-предметов подбора в map.json | Pickup model names in map.json
+PICKUP_MODELS = ("Silent_Noblewoman.bam", 'Treasure_Chest.bam')              # Имена моделей-предметов подбора в map.json | Pickup model names in map.json
 PLAYER_ICON = "player.png"                               # Иконка игрока на миникарте | Player minimap icon
-
-# Модели, которые некорректно рендерятся под освещением сцены (чернеют/невидимы).
-# incorrectly under the scene lighting (turn black/invisible). Lighting is disabled for them.
-LIGHT_OFF_MODELS = {"droid.bam", "robot_zombie_warrior.bam"}
 
 # ================ Игровые параметры | Game Parameters ================
 MAP_SIZE = 50                                    # Размер игрового поля | Game field size
@@ -53,16 +49,15 @@ PLAYER_HEADING = 180                             # Начальный повор
 PLAYER_COLLISION_CENTER = (0, 0, 1)              # Центр коллайдера игрока | Player collider center
 PLAYER_COLLISION_RADIUS = 0.5                    # Радиус коллайдера игрока | Player collider radius
 
-# ================ Коллайдеры | Colliders ================
-OBSTACLE_MASK_BIT = 3                            # Бит маски препятствий | Obstacle mask bit
-
 # ================ Предметы и заклинания | Pickups and Spells ================
 PICKUP_RANGE = 5                                 # Радиус подбора предмета | Pickup range
 PICKUP_RAY_RANGE = 20                            # Дистанция луча подбора | Pickup ray range
 SPELL_RANGE = 25                                 # Дистанция заклинания | Spell range
 
 # ================ Физика и графика | Physics and Graphics ================
+LOD_LEVEL = "LOD1"                               # Уровень детализации моделей (LOD0/LOD1/LOD2) | Model detail level
 GROUND_TOLERANCE = 0.05                          # Допуск приземления | Ground tolerance
+GROUND_SNAP = 0.6                                # Порог отрыва от земли (спуск) | Ground snap/drop threshold
 GROUND_THICKNESS = 0.5                           # Толщина земли | Ground thickness
 WINDOW_WIDTH = 1280                              # Ширина окна | Window width
 WINDOW_HEIGHT = 720                              # Высота окна | Window height

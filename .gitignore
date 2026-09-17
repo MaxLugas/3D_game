@@ -7,5 +7,5 @@ __pycache__/
 .DS_Store
 .idea/
 /tools/models_glb/
-/docs/
 *.json
+/tools/model_converted/

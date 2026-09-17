@@ -1,8 +1,9 @@
 from direct.actor.Actor import Actor
 from direct.showbase.ShowBaseGlobal import globalClock
-from panda3d.core import LVector3, LPoint3, BitMask32
+from panda3d.core import LVector3, LPoint3
 
 from src.config import MAP_SIZE, PLAYER_MODEL
+from src.core.collision_masks import collide_mask
 from src.maps.editor_config import (
     GHOST_COLOR,
     GHOST_NORMAL_MODELS,
@@ -12,7 +13,7 @@ from src.maps.editor_config import (
     PLACEMENT_DISTANCE,
     PICK_MASK_BIT,
 )
-from src.maps.model_loader import load_model_or_actor, create_bounds_collider, apply_world_render
+from src.maps.model_loader import load_model_or_actor, create_bounds_collider
 
 
 class EditorModelsMixin:
@@ -149,7 +150,6 @@ class EditorModelsMixin:
         node = self.load_actor_or_model(name)
         node.reparentTo(self.render)
         node.showBounds()
-        apply_world_render(node, name)
         node.setPos(*pos)
         if scale is None:
             scale = 1
@@ -161,7 +161,7 @@ class EditorModelsMixin:
         pick_node = create_bounds_collider(
             node,
             f"pick_{id(node)}",
-            into_mask=BitMask32.bit(PICK_MASK_BIT),
+            into_mask=collide_mask(PICK_MASK_BIT),
         )
         node.attachNewNode(pick_node)
         return node
