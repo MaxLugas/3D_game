@@ -57,6 +57,10 @@ def process_file(filename):
     if not source_mesh_objects:
         return None
 
+    if any(obj.type == 'ARMATURE' for obj in bpy.context.scene.objects):
+        bpy.ops.export_scene.gltf(filepath=os.path.join(DST, filename), export_format='GLB')
+        return {"actor": True}
+
     for src_obj in source_mesh_objects:
         src_obj.select_set(False)
 
@@ -88,6 +92,9 @@ def process_file(filename):
 
                 new_obj.select_set(False)
 
+    for src_obj in source_mesh_objects:
+        bpy.data.objects.remove(src_obj, do_unlink=True)
+
     out_path = os.path.join(DST, filename)
     bpy.ops.export_scene.gltf(filepath=out_path, export_format='GLB')
 
@@ -107,15 +114,18 @@ total = len(glb_files)
 for i, f in enumerate(glb_files, 1):
     name = f.replace(".glb", "")
     try:
-        lod_polys = process_file(f)
+        result = process_file(f)
     except Exception:
         print(f"[{i}/{total}] {name}: ОШИБКА")
         traceback.print_exc()
         continue
-    if not lod_polys:
+    if not result:
         print(f"[{i}/{total}] {name}: нет полигонов, пропущено")
         continue
-    parts = " | ".join(f"{lod}: {fmt(lod_polys.get(lod, 0))}" for lod in ("LOD0", "LOD1", "LOD2"))
+    if result.get("actor"):
+        print(f"[{i}/{total}] {name}: актёр — LOD пропущен")
+        continue
+    parts = " | ".join(f"{lod}: {fmt(result.get(lod, 0))}" for lod in ("LOD0", "LOD1", "LOD2"))
     print(f"[{i}/{total}] {name}: {parts} пол.")
 
 print(f"\nГотово. Файлы сохранены в: {DST}")
