@@ -18,7 +18,7 @@ class NpcSettings:
 DEFAULTS = NpcSettings()
 
 NPCS = {
-    "droid.bam": NpcSettings(
+    "Droid.bam": NpcSettings(
         anims={
             "idle": "Idle",
             "aggro": "Berserker_Call",
@@ -32,6 +32,14 @@ NPCS = {
             "aggro": "Skill_01",
             "run": "Running",
             "attack": "Skill_03",
+        },
+    ),
+    "Droid_2.bam": NpcSettings(
+        anims={
+            "idle": "Idle",
+            "aggro": "Berserker_Call",
+            "run": "Running_03",
+            "attack": "Attack_02",
         },
     ),
 }
